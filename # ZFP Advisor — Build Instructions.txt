@@ -1,0 +1,214 @@
+# ZFP Advisor — Build Instructions for Claude Code
+# ZFP Advisor — Build Instructions for Claude Code
+
+## What You Are Building
+ZFP Advisor is a bilingual (Arabic/English) AI business advisor for senior
+leadership of ZFP Group, an Architecture & Engineering firm with 789 employees
+in Saudi Arabia and Egypt. It answers natural language questions about workforce
+data by generating DAX queries, executing them against Power BI, and narrating
+results back in clear business language.
+
+## Tech Stack
+- Backend: Python FastAPI
+- Frontend: Single HTML file with vanilla JS (no React, keep it simple)
+- AI: Anthropic Claude API (claude-sonnet-4-20250514)
+- Data: Power BI REST API with MSAL username/password auth
+- Environment: Windows local machine, run with uvicorn
+
+## Project Structure to Create
+```
+ZFP-Advisor/
+├── CLAUDE.md
+├── .env
+├── .gitignore
+├── requirements.txt
+├── main.py                  ← FastAPI app, all routes
+├── advisor/
+│   ├── __init__.py
+│   ├── auth.py              ← Power BI MSAL authentication
+│   ├── powerbi.py           ← DAX query execution against Power BI
+│   ├── claude_advisor.py    ← Claude API: DAX generation + narration
+│   └── models.py            ← Pydantic request/response models
+├── static/
+│   └── index.html           ← Full chat UI, bilingual Arabic/English
+└── tests/
+    ├── test_auth.py
+    ├── test_powerbi.py
+    └── test_advisor.py
+```
+
+## Environment Variables (already in .env)
+```
+ANTHROPIC_API_KEY=
+POWERBI_EMAIL=abidris@zfp.com
+POWERBI_PASSWORD=
+POWERBI_WORKSPACE_ID=d22cea18-4fd9-4655-b61f-ecfca0db3048
+POWERBI_DATASET_ID=a577493b-6eb6-4061-acc3-942db4412edd
+```
+
+## Power BI Authentication (auth.py)
+Use MSAL with username/password flow:
+- Authority: https://login.microsoftonline.com/organizations
+- Scope: https://analysis.windows.net/powerbi/api/.default
+- Use msal.PublicClientApplication
+- Cache the token and refresh before expiry
+- Raise clear error if auth fails with the exact MSAL error message
+
+## Power BI DAX Execution (powerbi.py)
+POST to:
+https://api.powerbi.com/v1.0/myorg/groups/{POWERBI_WORKSPACE_ID}/datasets/{POWERBI_DATASET_ID}/executeQueries
+
+Request body:
+```json
+{
+  "queries": [{"query": "<DAX here>"}],
+  "serializerSettings": {"includeNulls": true}
+}
+```
+- Parse response: extract results[0].tables[0].rows
+- If rows empty return "No data found for this query"
+- If API error return the exact error message for debugging
+- Timeout after 30 seconds
+- Log every DAX query and response to a file: logs/queries.log
+
+## Claude AI Logic (claude_advisor.py)
+Two functions:
+
+### generate_dax(user_question: str) -> str
+System prompt:
+```
+You are a DAX query generator for Power BI. Generate ONLY valid DAX queries.
+Start every query with EVALUATE. Return ONLY the DAX query, nothing else.
+No explanation, no markdown, no backticks.
+
+PRIMARY TABLE: TS_DTL (Timesheet Detail)
+Columns: EMP_NO, WEEK_NO (YYYYWW integer, current week = MAX), 
+TS_DATE (date), RGLR_HRS (decimal), OT_HRS (decimal),
+PROJECT_NO (text, blank = overhead/non-billable), 
+Project_Name (text), BUSNS_UNIT_NO (text),
+NATIONALITY_NO (text, "1" = Saudi), TD_ID, 
+DEPT_NO, BRANCH_NO, ACTIVITY_NO, COMP_NO
+
+RELATED TABLES (use RELATED() to join):
+- EMPLOYEES: EMP_NO → employee details, DEPT_NO, BRANCH_NO, BUSNS_UNIT_NO
+- BUSNS_UNIT: BUSNS_UNIT_NO → "Clean Name" column for BU display name
+- DEPARTMENT: DEPT_NO → DEPT_DSCR
+- NATIONS: NATIONALITY_NO → COUNTRY_NAME
+- BRANCH: BRANCH_NO → BRANCH_NAME
+- PROJECTS: PROJECT_NO → project details, STATUS, BUSNS_SECTOR
+- STATUS: → STATUS_DSCR
+- BUSNS_SECTOR: → SECTOR_DSCR
+
+BILLABLE LOGIC: PROJECT_NO is NOT blank = billable hours
+OVERHEAD LOGIC: PROJECT_NO IS blank = non-billable/overhead hours
+
+WEEK NUMBER FORMAT: YYYYWW (e.g. 202523 = week 23 of 2025)
+Current year is 2026.
+
+COMMON PATTERNS:
+- Total hours = SUM(TS_DTL[RGLR_HRS]) + SUM(TS_DTL[OT_HRS])
+- Billable hours = CALCULATE(SUM(TS_DTL[RGLR_HRS]), TS_DTL[PROJECT_NO] <> "")
+- Utilization % = DIVIDE(billable hours, total hours, 0)
+- Current month filter = MONTH(TS_DTL[TS_DATE]) = MONTH(TODAY()) && YEAR(TS_DTL[TS_DATE]) = YEAR(TODAY())
+- Saudi employees = CALCULATE(..., TS_DTL[NATIONALITY_NO] = "1")
+
+Always use SUMMARIZECOLUMNS for grouped results.
+Always include a readable label column alongside numeric columns.
+Limit results to TOP 10 unless user asks for all.
+```
+
+### narrate_result(user_question: str, dax_query: str, raw_data: str, language: str) -> str
+System prompt:
+```
+You are ZFP Advisor, an AI business advisor for senior leadership of ZFP Group,
+an Architecture & Engineering firm operating in Saudi Arabia and Egypt.
+
+Your job: interpret Power BI data and deliver a clear, confident business answer.
+
+Rules:
+- Lead with the key number or finding
+- Follow with one comparison (vs last month or last week if data allows)
+- Add one business insight (what this means)
+- Suggest one action if relevant
+- Maximum 120 words
+- Use SAR for costs
+- Never say "the data shows" — just state the finding directly
+- If data is empty, say clearly what was not found and suggest rephrasing
+
+Language: respond in {language}. If Arabic, use formal business Arabic.
+```
+
+## API Endpoints (main.py)
+
+### POST /ask
+Request:
+```json
+{
+  "question": "string",
+  "language": "en" or "ar"
+}
+```
+Response:
+```json
+{
+  "answer": "string",
+  "dax_query": "string",
+  "raw_data": "string",
+  "status": "success" or "error"
+}
+```
+Pipeline: generate_dax → execute against Power BI → narrate_result
+
+### GET /health
+Returns: {"status": "ok", "powerbi": "connected" or "error", "claude": "connected"}
+Tests both connections on startup.
+
+### GET /
+Serves static/index.html
+
+## Frontend (static/index.html)
+Single HTML file. Clean, professional, executive-grade UI.
+
+Design requirements:
+- ZFP brand colors: dark navy (#1B2A4A) header, gold accent (#C9A84C)
+- Logo area: "ZFP Advisor" with a small AI spark icon
+- Language toggle: EN / AR button top right, switches UI direction (RTL for Arabic)
+- Chat interface: message bubbles, user right / AI left
+- Input bar at bottom with Send button and language toggle
+- Suggested questions (clickable chips) shown on first load:
+  * EN: "What is our billable utilization this month?"
+  * EN: "Which business unit has the most overtime?"  
+  * EN: "How many employees worked on billable projects last week?"
+  * AR: "ما نسبة الاستخدام القابل للفوترة هذا الشهر؟"
+  * AR: "أي وحدة أعمال لديها أكبر عدد ساعات إضافية؟"
+- Loading state: animated dots while waiting for response
+- Show DAX query in a collapsible "View Query" section under each answer
+- Responsive: works on laptop and mobile
+- No external CSS frameworks — pure CSS only
+
+## Error Handling
+- If DAX execution fails: show the DAX query to user with "Query failed — here is what was attempted"
+- If Claude API fails: return "AI service temporarily unavailable"
+- If Power BI auth fails: return "Unable to connect to Power BI — check credentials"
+- Log all errors to logs/errors.log with timestamp
+
+## Testing
+Write pytest tests for:
+- test_auth.py: mock MSAL, verify token is cached and refreshed
+- test_powerbi.py: mock Power BI API response, verify row parsing
+- test_advisor.py: mock Claude API, verify DAX is extracted cleanly
+
+## What NOT to Do
+- Do NOT use React or any JS framework
+- Do NOT use Copilot Studio or Power Automate
+- Do NOT store conversation history (stateless for now)
+- Do NOT hardcode any credentials — always read from .env
+- Do NOT ask questions during the build — make decisions and document them
+
+## When Build is Complete
+Print a summary:
+1. All files created
+2. How to start: `uvicorn main:app --reload --port 8000`
+3. URL to open: http://localhost:8000
+4. Any manual steps needed (e.g. Power BI admin settings)
+5. Known limitations of this version

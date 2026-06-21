@@ -1,0 +1,62 @@
+{
+  "last_updated": "2026-06-20",
+  "actions": [
+    {
+      "id": "ACT-001",
+      "description": "Develop billable utilization improvement plan — Design BU at 47%, 18 points below target",
+      "owner": "COO",
+      "due_date": "2026-06-22",
+      "priority": "High",
+      "status": "Open",
+      "source": "Dashboard Alert",
+      "context": "Design BU utilization has declined 4 consecutive weeks. 79 employees, only 37 on billable projects."
+    },
+    {
+      "id": "ACT-002",
+      "description": "CFO to present Finance data validation timeline to CEO",
+      "owner": "CFO",
+      "due_date": "2026-06-22",
+      "priority": "High",
+      "status": "Open",
+      "source": "Finance Dashboard",
+      "context": "Finance dashboard currently showing demo data. Real data connection pending CFO approval of data sharing format."
+    },
+    {
+      "id": "ACT-003",
+      "description": "Review top AR at risk projects with collections team — SAR 20.5M overdue 60+ days",
+      "owner": "CFO",
+      "due_date": "2026-06-25",
+      "priority": "High",
+      "status": "Open",
+      "source": "Finance Dashboard",
+      "context": "11 projects with AR age over 60 days. Al Nakheel (SAR 6M, 92 days) and Jeddah Historic District (SAR 3.4M, 99 days) are highest risk."
+    },
+    {
+      "id": "ACT-004",
+      "description": "Saudization improvement plan for Design BU — currently 10% vs 20% Nitaqat target",
+      "owner": "HR Director",
+      "due_date": "2026-06-30",
+      "priority": "Medium",
+      "status": "Open",
+      "source": "Workforce Dashboard",
+      "context": "Overall Saudization 24%. Design BU significantly below. Risk of Nitaqat compliance issue in next assessment."
+    },
+    {
+      "id": "ACT-005",
+      "description": "Investigate 4-week utilization decline trend — from 78% to 54.5%",
+      "owner": "COO",
+      "due_date": "2026-06-25",
+      "priority": "High",
+      "status": "Open",
+      "source": "Trend Alert",
+      "context": "Week 23: 78%, Week 24: 47%, Week 25: 62%, Week 26: 54.5%. Significant volatility suggests project pipeline gaps."
+    }
+  ],
+  "summary": {
+    "total": 5,
+    "open": 5,
+    "closed": 0,
+    "escalated": 0,
+    "high_priority_open": 3
+  }
+}

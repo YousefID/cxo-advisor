@@ -1,0 +1,11 @@
+﻿{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "exec-dashboard",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "7721", "--directory", "C:/Users/Abdulla Idris/Desktop/ZFP-Advisor/output"],
+      "port": 7721
+    }
+  ]
+}

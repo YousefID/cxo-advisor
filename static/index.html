@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ZFP Advisor — Workforce Intelligence</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --navy-light: #243660;
+    --navy-dark: #111d35;
+    --gold: #C9A84C;
+    --gold-light: #e0c070;
+    --gold-dim: rgba(201,168,76,0.18);
+    --bg: #f4f6fa;
+    --bubble-ai: #ffffff;
+    --bubble-user: #1B2A4A;
+    --text-main: #1a1a2e;
+    --text-muted: #6b7280;
+    --border: #e0e4ef;
+    --radius: 14px;
+    --shadow: 0 2px 12px rgba(27,42,74,0.10);
+    --shadow-lg: 0 4px 24px rgba(27,42,74,0.16);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text-main);
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--navy);
+    color: #fff;
+    padding: 0 24px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    z-index: 10;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .logo img {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    object-fit: contain;
+    background: rgba(255,255,255,0.08);
+    padding: 3px;
+  }
+
+  .logo-text { line-height: 1.2; }
+
+  .logo-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #fff;
+  }
+
+  .logo-name span { color: var(--gold); }
+
+  .logo-subtitle {
+    font-size: 0.68rem;
+    font-weight: 400;
+    opacity: 0.6;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .lang-toggle {
+    display: flex;
+    background: rgba(255,255,255,0.10);
+    border-radius: 20px;
+    padding: 3px;
+    gap: 2px;
+  }
+
+  .lang-btn {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.6);
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 5px 16px;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.06em;
+  }
+
+  .lang-btn.active {
+    background: var(--gold);
+    color: var(--navy);
+  }
+
+  /* ── Chat area ── */
+  #chat-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    scroll-behavior: smooth;
+  }
+
+  /* ── Welcome screen ── */
+  #welcome {
+    margin: auto;
+    text-align: center;
+    max-width: 540px;
+    padding: 20px 0;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .welcome-logo {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 20px;
+    border-radius: 18px;
+    object-fit: contain;
+    box-shadow: 0 4px 16px rgba(201,168,76,0.25);
+    background: var(--navy);
+    padding: 6px;
+  }
+
+  #welcome h2 {
+    font-size: 1.6rem;
+    color: var(--navy);
+    margin-bottom: 10px;
+    font-weight: 700;
+  }
+
+  #welcome p {
+    color: var(--text-muted);
+    font-size: 0.93rem;
+    margin-bottom: 28px;
+    line-height: 1.6;
+  }
+
+  .suggestions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .suggestion-chip {
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 13px 16px;
+    font-size: 0.83rem;
+    color: var(--navy);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+    line-height: 1.45;
+    font-family: inherit;
+    box-shadow: var(--shadow);
+  }
+
+  .suggestion-chip:hover {
+    border-color: var(--gold);
+    box-shadow: 0 2px 10px rgba(201,168,76,0.22);
+    transform: translateY(-1px);
+  }
+
+  .suggestion-chip.ar { text-align: right; direction: rtl; font-size: 0.88rem; }
+
+  /* ── Message bubbles ── */
+  .message {
+    display: flex;
+    gap: 10px;
+    max-width: 780px;
+    width: 100%;
+    animation: fadeUp 0.25s ease both;
+  }
+
+  .message.user { margin-left: auto; flex-direction: row-reverse; }
+
+  .avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .avatar.ai {
+    background: var(--navy);
+    overflow: hidden;
+    padding: 0;
+  }
+
+  .avatar.ai img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 50%;
+    padding: 4px;
+  }
+
+  .avatar.user-av { background: var(--gold); color: var(--navy); }
+
+  .bubble {
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    line-height: 1.65;
+    max-width: calc(100% - 44px);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .message.ai .bubble {
+    background: var(--bubble-ai);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    border-top-left-radius: 4px;
+  }
+
+  .message.user .bubble {
+    background: var(--bubble-user);
+    color: #fff;
+    border-top-right-radius: 4px;
+  }
+
+  /* ── Query collapsible ── */
+  .query-toggle {
+    font-size: 0.74rem;
+    color: var(--gold);
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin-top: 8px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 600;
+    opacity: 0.85;
+    transition: opacity 0.15s;
+    font-family: inherit;
+  }
+
+  .query-toggle:hover { opacity: 1; }
+
+  .query-box {
+    background: #f0f3fa;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--gold);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.74rem;
+    color: #2d3a5c;
+    white-space: pre-wrap;
+    margin-top: 6px;
+    display: none;
+    word-break: break-all;
+    line-height: 1.5;
+  }
+
+  .query-box.open { display: block; }
+
+  /* ── Loading dots ── */
+  .loading-bubble {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 14px 18px;
+    background: var(--bubble-ai);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    border-top-left-radius: 4px;
+    box-shadow: var(--shadow);
+  }
+
+  .dot {
+    width: 7px; height: 7px;
+    background: var(--navy);
+    border-radius: 50%;
+    animation: bounce 1.2s infinite ease-in-out;
+  }
+
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.35; }
+    40%            { transform: translateY(-6px); opacity: 1; }
+  }
+
+  /* ── Input bar ── */
+  #input-bar {
+    background: #fff;
+    border-top: 1px solid var(--border);
+    padding: 12px 20px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    flex-shrink: 0;
+    box-shadow: 0 -2px 8px rgba(27,42,74,0.06);
+  }
+
+  #question-input {
+    flex: 1;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 0.92rem;
+    resize: none;
+    outline: none;
+    font-family: inherit;
+    line-height: 1.55;
+    min-height: 44px;
+    max-height: 120px;
+    overflow-y: auto;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    color: var(--text-main);
+  }
+
+  #question-input:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201,168,76,0.12);
+  }
+
+  #question-input::placeholder { color: #aab3c4; }
+
+  #send-btn {
+    background: var(--navy);
+    color: var(--gold);
+    border: none;
+    border-radius: 12px;
+    width: 44px;
+    height: 44px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, transform 0.1s;
+    flex-shrink: 0;
+  }
+
+  #send-btn:hover:not(:disabled) {
+    background: var(--navy-light);
+    transform: scale(1.04);
+  }
+
+  #send-btn:disabled { opacity: 0.38; cursor: not-allowed; }
+
+  /* ── RTL support ── */
+  html[dir="rtl"] .message.user  { flex-direction: row; margin-left: 0; margin-right: auto; }
+  html[dir="rtl"] .message.ai   { flex-direction: row-reverse; }
+  html[dir="rtl"] .message.ai .bubble  { border-top-left-radius: var(--radius); border-top-right-radius: 4px; }
+  html[dir="rtl"] .message.user .bubble { border-top-right-radius: var(--radius); border-top-left-radius: 4px; }
+  html[dir="rtl"] #question-input { direction: rtl; text-align: right; }
+  html[dir="rtl"] .suggestions   { direction: rtl; }
+  html[dir="rtl"] #welcome        { direction: rtl; }
+  html[dir="rtl"] #welcome h2,
+  html[dir="rtl"] #welcome p      { direction: rtl; }
+
+  /* ── Responsive ── */
+  @media (max-width: 540px) {
+    .suggestions { grid-template-columns: 1fr; }
+    header { padding: 0 14px; }
+    #chat-area { padding: 16px 12px; }
+    #input-bar { padding: 10px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <img src="/static/logo.png" alt="ZFP Logo" />
+    <div class="logo-text">
+      <div class="logo-name">ZFP <span>Advisor</span></div>
+      <div class="logo-subtitle" id="logo-sub">Workforce Intelligence</div>
+    </div>
+  </div>
+  <div class="lang-toggle">
+    <button class="lang-btn active" id="btn-en" onclick="setLang('en')">EN</button>
+    <button class="lang-btn" id="btn-ar" onclick="setLang('ar')">AR</button>
+  </div>
+</header>
+
+<div id="chat-area">
+  <div id="welcome">
+    <img src="/static/logo.png" alt="ZFP" class="welcome-logo" />
+    <h2 id="welcome-title">Good day 👋</h2>
+    <p id="welcome-sub">Ask me anything about ZFP's workforce data. I'll query Power BI and give you a clear answer.</p>
+    <div class="suggestions" id="suggestions"></div>
+  </div>
+</div>
+
+<div id="input-bar">
+  <textarea id="question-input" rows="1"
+    placeholder="Ask about workforce data…"
+    onkeydown="handleKey(event)"
+    oninput="autoResize(this)"></textarea>
+  <button id="send-btn" onclick="sendQuestion()" title="Send">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2.2"
+         stroke-linecap="round" stroke-linejoin="round">
+      <line x1="22" y1="2" x2="11" y2="13"/>
+      <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+    </svg>
+  </button>
+</div>
+
+<script>
+const SUGGESTIONS = {
+  en: [
+    "What is our billable utilization this month?",
+    "Which business unit has the most overtime?",
+    "How many employees worked on billable projects last week?",
+    "Show me the top 5 projects by hours this month"
+  ],
+  ar: [
+    "ما نسبة الاستخدام القابل للفوترة هذا الشهر؟",
+    "أي وحدة أعمال لديها أكبر عدد ساعات إضافية؟",
+    "كم عدد الموظفين الذين عملوا في مشاريع قابلة للفوترة الأسبوع الماضي؟",
+    "أظهر لي أفضل 5 مشاريع من حيث الساعات هذا الشهر"
+  ]
+};
+
+const TEXT = {
+  en: {
+    welcomeTitle: "Good day 👋",
+    welcomeSub:   "Ask me anything about ZFP's workforce data. I'll query Power BI and give you a clear answer.",
+    placeholder:  "Ask about workforce data…",
+    viewQuery:    "View DAX Query",
+    hideQuery:    "Hide Query",
+    logoSub:      "Workforce Intelligence",
+  },
+  ar: {
+    welcomeTitle: "أهلاً بك 👋",
+    welcomeSub:   "اسألني عن أي بيانات قوى عاملة في ZFP. سأستعلم من Power BI وأعطيك إجابة واضحة.",
+    placeholder:  "اسأل عن بيانات القوى العاملة…",
+    viewQuery:    "عرض استعلام DAX",
+    hideQuery:    "إخفاء الاستعلام",
+    logoSub:      "الذكاء الوظيفي",
+  }
+};
+
+let currentLang = 'en';
+let isLoading   = false;
+
+/* ── Language ─────────────────────────────────────────────────────────── */
+function setLang(lang) {
+  currentLang = lang;
+  const html = document.documentElement;
+  html.lang = lang;
+  html.dir  = lang === 'ar' ? 'rtl' : 'ltr';
+
+  document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+  document.getElementById('btn-ar').classList.toggle('active', lang === 'ar');
+
+  const t = TEXT[lang];
+  document.getElementById('welcome-title').textContent     = t.welcomeTitle;
+  document.getElementById('welcome-sub').textContent       = t.welcomeSub;
+  document.getElementById('question-input').placeholder    = t.placeholder;
+  document.getElementById('logo-sub').textContent          = t.logoSub;
+
+  renderSuggestions();
+}
+
+/* ── Suggestions ─────────────────────────────────────────────────────── */
+function renderSuggestions() {
+  const container = document.getElementById('suggestions');
+  container.innerHTML = '';
+  SUGGESTIONS[currentLang].forEach(s => {
+    const chip = document.createElement('button');
+    chip.className = 'suggestion-chip' + (currentLang === 'ar' ? ' ar' : '');
+    chip.textContent = s;
+    chip.onclick = () => fillAndSend(s);
+    container.appendChild(chip);
+  });
+}
+
+/* ── Input helpers ───────────────────────────────────────────────────── */
+function fillAndSend(text) {
+  const input = document.getElementById('question-input');
+  input.value = text;
+  autoResize(input);
+  sendQuestion();
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendQuestion(); }
+}
+
+/* ── Welcome screen ──────────────────────────────────────────────────── */
+function hideWelcome() {
+  const w = document.getElementById('welcome');
+  if (w) { w.style.animation = 'none'; w.remove(); }
+}
+
+/* ── Message rendering ───────────────────────────────────────────────── */
+function appendMessage(role, text, daxQuery) {
+  const area    = document.getElementById('chat-area');
+  const wrapper = document.createElement('div');
+  wrapper.className = `message ${role}`;
+
+  // Avatar
+  const av = document.createElement('div');
+  av.className = `avatar ${role === 'ai' ? 'ai' : 'user-av'}`;
+  if (role === 'ai') {
+    const img = document.createElement('img');
+    img.src = '/static/logo.png';
+    img.alt = 'ZFP';
+    av.appendChild(img);
+  } else {
+    av.textContent = currentLang === 'ar' ? 'أنت' : 'You';
+  }
+
+  // Column
+  const col    = document.createElement('div');
+  col.style.cssText = 'display:flex;flex-direction:column;max-width:calc(100% - 44px)';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.textContent = text;
+  col.appendChild(bubble);
+
+  // Collapsible DAX
+  if (daxQuery && role === 'ai') {
+    const t   = TEXT[currentLang];
+    const btn = document.createElement('button');
+    btn.className = 'query-toggle';
+    btn.innerHTML = chevron(false) + t.viewQuery;
+
+    const box = document.createElement('pre');
+    box.className = 'query-box';
+    box.textContent = daxQuery;
+
+    btn.onclick = () => {
+      const open = box.classList.toggle('open');
+      btn.innerHTML = chevron(open) + (open ? t.hideQuery : t.viewQuery);
+    };
+    col.appendChild(btn);
+    col.appendChild(box);
+  }
+
+  wrapper.appendChild(av);
+  wrapper.appendChild(col);
+  area.appendChild(wrapper);
+  area.scrollTop = area.scrollHeight;
+}
+
+function chevron(up) {
+  const pts = up ? '18 15 12 9 6 15' : '6 9 12 15 18 9';
+  return `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:4px"><polyline points="${pts}"/></svg>`;
+}
+
+/* ── Loading indicator ───────────────────────────────────────────────── */
+function showLoading() {
+  const area    = document.getElementById('chat-area');
+  const wrapper = document.createElement('div');
+  wrapper.className = 'message ai';
+  wrapper.id = 'loading-msg';
+
+  const av = document.createElement('div');
+  av.className = 'avatar ai';
+  const img = document.createElement('img');
+  img.src = '/static/logo.png'; img.alt = 'ZFP';
+  av.appendChild(img);
+
+  const lb = document.createElement('div');
+  lb.className = 'loading-bubble';
+  lb.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+
+  wrapper.appendChild(av);
+  wrapper.appendChild(lb);
+  area.appendChild(wrapper);
+  area.scrollTop = area.scrollHeight;
+}
+
+function removeLoading() {
+  const el = document.getElementById('loading-msg');
+  if (el) el.remove();
+}
+
+/* ── Send ────────────────────────────────────────────────────────────── */
+async function sendQuestion() {
+  if (isLoading) return;
+  const input    = document.getElementById('question-input');
+  const question = input.value.trim();
+  if (!question) return;
+
+  hideWelcome();
+  input.value = '';
+  input.style.height = 'auto';
+  isLoading = true;
+  document.getElementById('send-btn').disabled = true;
+
+  appendMessage('user', question, null);
+  showLoading();
+
+  try {
+    const resp = await fetch('/ask', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ question, language: currentLang }),
+    });
+    const data = await resp.json();
+    removeLoading();
+    appendMessage('ai', data.answer, data.dax_query || null);
+  } catch {
+    removeLoading();
+    appendMessage('ai',
+      currentLang === 'ar'
+        ? 'خطأ في الشبكة — يرجى التحقق من الاتصال والمحاولة مرة أخرى.'
+        : 'Network error — please check your connection and try again.',
+      null
+    );
+  } finally {
+    isLoading = false;
+    document.getElementById('send-btn').disabled = false;
+    input.focus();
+  }
+}
+
+// Init
+renderSuggestions();
+</script>
+</body>
+</html>

@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ZFP CEO Advisor - Executive Dashboard</title>
+<style>
+:root{
+  --bg:#05070a;
+  --surface:#0d1219;
+  --surface2:#111a26;
+  --surface3:#172538;
+  --text:#f4f7fb;
+  --muted:#a7b0bd;
+  --border:rgba(255,255,255,.10);
+  --primary:#1f6fd6;
+  --primary2:#2f86ff;
+  --primary3:#0b3f89;
+  --accent:#57a7ff;
+  --danger:#ff4d3d;
+  --warning:#ffcc18;
+  --ok:#65c947;
+  --shadow:0 24px 70px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  min-height:100vh;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;
+  font-size:14px;
+}
+body.light{
+  --bg:#f6f7f9;
+  --surface:#ffffff;
+  --surface2:#f3f6fa;
+  --surface3:#e9eef6;
+  --text:#161a20;
+  --muted:#5f6670;
+  --border:rgba(0,0,0,.10);
+  --shadow:0 14px 40px rgba(23,31,46,.08);
+}
+body.theme-blue{
+  --primary:#1f6fd6;--primary2:#2f86ff;--primary3:#0b3f89;--accent:#54b8d5;
+}
+body.theme-office{
+  --primary:#1b6d86;--primary2:#ed7131;--primary3:#19712b;--accent:#6fd13d;
+}
+body.theme-zfp{
+  --primary:#d6a300;--primary2:#ffcd28;--primary3:#bd8c00;--accent:#f1ce73;
+}
+.app{
+  width:100%;
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 20% 0%, color-mix(in srgb, var(--primary) 18%, transparent), transparent 28%),
+    radial-gradient(circle at 75% 12%, color-mix(in srgb, var(--primary2) 14%, transparent), transparent 30%),
+    var(--bg);
+}
+/* theme picker dropdown */
+.theme-picker{position:relative}
+.theme-toggle-btn{
+  width:38px;height:38px;border-radius:8px;
+  border:1px solid var(--border);background:var(--surface);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--muted);transition:.15s;
+}
+.theme-toggle-btn:hover{border-color:var(--primary2);color:var(--primary2)}
+.theme-menu{
+  position:absolute;top:calc(100% + 8px);right:0;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:8px;display:none;flex-direction:column;gap:4px;
+  min-width:160px;z-index:100;
+  box-shadow:0 16px 40px rgba(0,0,0,.4);
+}
+.theme-menu.open{display:flex}
+.theme-opt{
+  display:flex;align-items:center;gap:8px;padding:8px 10px;
+  border-radius:7px;border:1px solid transparent;background:transparent;
+  cursor:pointer;color:var(--text);font-size:12px;font-weight:600;
+  transition:.12s;
+}
+.theme-opt:hover{background:rgba(255,255,255,.05);border-color:var(--border)}
+.theme-opt.active{background:color-mix(in srgb,var(--primary) 18%,transparent);border-color:color-mix(in srgb,var(--primary2) 40%,transparent)}
+.swatch{
+  width:14px;height:14px;border-radius:50%;flex-shrink:0;
+  box-shadow:inset 0 1px 2px rgba(255,255,255,.2);
+}
+/* dark/light mode toggle */
+.mode-toggle{display:flex;gap:6px;align-items:center}
+.mode-dot{
+  width:30px;height:30px;border-radius:50%;border:2px solid var(--border);
+  cursor:pointer;transition:.15s;
+}
+.mode-dot.light-dot{background:#f4f7fb}
+.mode-dot.dark-dot{background:#0d1219}
+.mode-dot.active{border-color:var(--primary2);box-shadow:0 0 0 2px color-mix(in srgb,var(--primary2) 35%,transparent)}
+.mode-dot:hover{transform:scale(1.1)}
+.main{
+  padding:28px;
+}
+.topbar{
+  display:grid;
+  grid-template-columns:260px 1fr 360px;
+  align-items:center;
+  gap:24px;
+  margin-bottom:26px;
+}
+.brand{display:flex;align-items:center;gap:16px}
+.logo{
+  width:66px;height:66px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(145deg,var(--primary2),var(--primary));
+  color:#111;font-weight:900;font-size:25px;
+  box-shadow:0 14px 30px color-mix(in srgb, var(--primary) 32%, transparent);
+}
+body.theme-blue .logo{color:#fff}
+.brand h1{font-size:17px;letter-spacing:.2px}
+.brand p{color:var(--muted);font-size:14px;margin-top:3px}
+.center-tools{display:flex;gap:16px;align-items:center}
+.badge{
+  padding:12px 16px;
+  border-radius:8px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  box-shadow:var(--shadow);
+  font-size:16px;
+  display:inline-flex;
+  align-items:center;
+  gap:9px;
+}
+.badge.alert{color:#ff6658;background:rgba(165,38,28,.18);border-color:rgba(255,78,61,.20);font-weight:800}
+.right-tools{display:flex;align-items:center;justify-content:flex-end;gap:24px}
+.icon-only{width:34px;height:34px;color:var(--text);opacity:.92}
+.lang{
+  display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--surface)
+}
+.lang button{
+  width:72px;height:42px;border:0;background:transparent;color:var(--muted);font-weight:800;font-size:15px;cursor:pointer;
+}
+.lang button.active{background:linear-gradient(135deg,var(--primary3),var(--primary));color:white}
+.layout{
+  display:grid;
+  grid-template-columns:200px 1fr 1fr 1fr 1fr 280px;
+  gap:14px;
+  padding:0 24px;
+}
+.sidebar{
+  grid-column:1;grid-row:1/3;align-self:start;
+  background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;padding:0 0 12px;
+}
+.sidebar-logo{
+  padding:18px 14px 14px;border-bottom:1px solid var(--border);
+  display:flex;flex-direction:column;align-items:flex-start;gap:8px;
+}
+.sidebar-logo img{height:48px;width:auto;object-fit:contain;filter:drop-shadow(0 0 14px rgba(201,168,76,.5));}
+.sidebar-logo-text .name{font-size:13px;font-weight:700;color:var(--text);letter-spacing:.3px;}
+.sidebar-logo-text .sub{font-size:9px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px;}
+.sidebar-nav{flex:1;padding:12px 10px;display:flex;flex-direction:column;gap:3px;}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;
+  font-size:13px;font-weight:500;color:var(--muted);
+  cursor:pointer;transition:all .15s;text-decoration:none;position:relative;
+}
+.nav-item:hover{background:var(--surface2);color:var(--text);}
+.nav-item.active{background:color-mix(in srgb,var(--primary) 15%,transparent);color:var(--accent);}
+.nav-item.active::before{
+  content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);
+  width:3px;height:20px;background:var(--primary2);border-radius:0 3px 3px 0;
+}
+[dir="rtl"] .nav-item.active::before{left:auto;right:0;border-radius:3px 0 0 3px;}
+.nav-item svg{width:16px;height:16px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.nav-badge{
+  margin-left:auto;font-size:10px;font-weight:600;
+  background:var(--surface2);color:var(--muted);
+  padding:2px 7px;border-radius:20px;border:1px solid var(--border);
+}
+[dir="rtl"] .nav-badge{margin-left:0;margin-right:auto;}
+.sidebar-bottom{
+  padding:12px 14px;border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.avatar-circle{
+  width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  background:color-mix(in srgb,var(--primary) 15%,transparent);
+  border:1.5px solid var(--primary2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;color:var(--primary2);
+}
+.user-info .uname{font-size:12px;font-weight:600;color:var(--text);}
+.user-info .urole{font-size:10px;color:var(--muted);}
+.content{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:14px;
+  min-width:0;
+}
+.card,.panel{
+  background:linear-gradient(145deg,color-mix(in srgb,var(--surface) 96%,white 4%),var(--surface));
+  border:1px solid var(--border);
+  border-radius:8px;
+  box-shadow:var(--shadow);
+}
+.kpi{
+  min-height:150px;
+  padding:24px;
+  position:relative;
+  cursor:pointer;
+  transition:border-color .15s, transform .12s;
+  min-width:0;
+}
+.kpi:hover{border-color:color-mix(in srgb,var(--primary2) 55%,transparent);transform:translateY(-2px)}
+.kpi-title{font-size:15px;text-transform:uppercase;letter-spacing:.4px;color:var(--text);opacity:.9}
+.kpi-value{font-size:38px;font-weight:800;line-height:1.05;margin-top:16px}
+.kpi-sub{margin-top:16px;color:var(--muted);font-size:15px}
+.kpi-sub.blue{color:var(--primary2)}
+.kpi-sub.red{color:var(--danger)}
+.kpi-icon{
+  position:absolute;right:16px;bottom:16px;width:40px;height:40px;border-radius:50%;
+  background:radial-gradient(circle at 30% 20%,var(--primary2),var(--primary3));
+  display:flex;align-items:center;justify-content:center;color:#b9dcff;opacity:.75;
+}
+body.theme-zfp .kpi-icon{color:#2b2100}
+.kpi-icon svg{width:20px;height:20px;stroke:currentColor}
+.panel{padding:20px}
+.panel h3{font-size:16px;text-transform:uppercase;letter-spacing:.3px;margin-bottom:20px}
+.util-panel{grid-column:2/4;grid-row:2;min-height:280px}
+.ar-panel{grid-column:4/6;grid-row:2;min-height:280px}
+.actions-panel{grid-column:1/4;grid-row:3;min-height:260px;}
+.ai-center-panel{grid-column:4/7;grid-row:3;padding:20px;display:flex;flex-direction:column;min-height:300px;}
+.right{grid-column:6;grid-row:1/3;}
+.projects-panel{height:100%;box-sizing:border-box;}
+.row{display:grid;grid-template-columns:124px 1fr 46px;align-items:center;gap:12px;margin:15px 0}
+.bar-track{height:20px;border-left:1px solid var(--muted);background:rgba(255,255,255,.03)}
+body.light .bar-track{background:rgba(0,0,0,.03)}
+.bar{height:100%;background:linear-gradient(90deg,var(--primary3),var(--primary2));border-radius:2px;transition:width .6s ease}
+.axis{display:flex;justify-content:space-between;margin-left:124px;color:var(--muted);font-size:12px}
+.donut-wrap{display:grid;grid-template-columns:190px 1fr;gap:26px;align-items:center}
+.donut{
+  width:180px;height:180px;border-radius:50%;
+  background:conic-gradient(var(--primary2) 0 36%,var(--primary) 36% 63%,var(--danger) 63% 100%);
+  position:relative;transition:background .5s;
+}
+.donut:after{
+  content:"";position:absolute;inset:34px;border-radius:50%;background:var(--surface);
+}
+.donut-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:2}
+.donut-center b{font-size:24px}
+.legend{display:flex;flex-direction:column;gap:17px;font-size:15px}
+.legend-line{display:grid;grid-template-columns:12px 1fr;gap:12px}
+.leg-dot{width:12px;height:12px;border-radius:50%;margin-top:4px;background:var(--primary2)}
+.leg-dot.two{background:var(--primary)}
+.leg-dot.red{background:var(--danger)}
+.table{width:100%;border-collapse:collapse}
+.table td{padding:8px 0;border-bottom:0 solid var(--border);font-size:13px;white-space:nowrap}
+.priority{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--warning);margin-right:8px}
+.priority.mid{background:#ff9c1a}
+.panel-link{display:inline-flex;gap:8px;align-items:center;color:var(--primary2);margin-top:16px;font-size:14px;cursor:pointer}
+.project-row{display:grid;grid-template-columns:1fr 80px 72px;align-items:center;gap:10px;margin:10px 0}
+.project-row span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;}
+.right{display:flex;flex-direction:column;gap:14px;}
+.ai-panel{height:100%;padding:22px;display:flex;flex-direction:column;}
+.ai-title{display:flex;align-items:center;gap:12px;font-size:16px;font-weight:800;margin-bottom:16px}
+.spark{color:var(--primary2);font-size:24px}
+.ai-messages{
+  flex:1;min-height:160px;max-height:260px;overflow-y:auto;
+  background:linear-gradient(145deg,color-mix(in srgb,var(--primary) 18%,var(--surface2)),var(--surface2));
+  border:1px solid color-mix(in srgb,var(--primary) 30%,transparent);
+  border-radius:6px;padding:16px;margin-bottom:14px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.ai-messages::-webkit-scrollbar{width:4px}
+.ai-messages::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.ai-empty{color:var(--accent);font-size:15px;font-weight:700;margin-bottom:8px}
+.ai-welcome{color:var(--muted);font-size:13px;line-height:1.5}
+.msg-user{
+  background:color-mix(in srgb,var(--primary) 18%,transparent);
+  border:1px solid color-mix(in srgb,var(--primary2) 25%,transparent);
+  border-radius:6px;padding:10px 14px;font-size:13px;color:var(--text);
+  align-self:flex-end;max-width:90%;
+}
+.msg-ai{
+  background:color-mix(in srgb,var(--surface3) 80%,transparent);
+  border:1px solid var(--border);
+  border-radius:6px;padding:10px 14px;font-size:13px;color:var(--text);line-height:1.5;
+}
+.msg-thinking{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;padding:6px 0}
+.thinking-dots{display:flex;gap:3px}
+.thinking-dots span{width:5px;height:5px;background:var(--primary2);border-radius:50%;animation:bounce 1.2s infinite}
+.thinking-dots span:nth-child(2){animation-delay:.2s}
+.thinking-dots span:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,80%,100%{transform:scale(.5);opacity:.5}40%{transform:scale(1);opacity:1}}
+.chips-row{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.question{
+  height:40px;border:1px solid var(--primary);border-radius:6px;
+  display:flex;align-items:center;padding:0 18px;color:var(--primary2);
+  cursor:pointer;font-size:13px;transition:background .15s;
+}
+.question:hover{background:color-mix(in srgb,var(--primary) 15%,transparent)}
+.input-row{display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-top:auto}
+.input-row textarea{
+  flex:1;background:transparent;border:0;padding:12px 14px;color:var(--text);font-size:13px;
+  resize:none;min-height:44px;max-height:90px;font-family:inherit;line-height:1.4;
+}
+.input-row textarea:focus{outline:none}
+.input-row textarea::placeholder{color:var(--muted)}
+.send-btn{width:48px;border:0;background:linear-gradient(135deg,var(--primary2),var(--primary3));color:#fff;cursor:pointer;font-size:18px;transition:opacity .15s}
+.send-btn:hover{opacity:.85}
+.send-btn:disabled{opacity:.4;cursor:default}
+.disclaimer{color:var(--muted);font-size:12px;line-height:1.45;margin-top:10px}
+.insight{
+  grid-column:1/-1;
+  margin-top:14px;
+  min-height:86px;
+  background:linear-gradient(145deg,var(--surface),color-mix(in srgb,var(--surface) 85%,var(--primary) 15%));
+  border:1px solid var(--border);
+  border-radius:8px;
+  display:grid;
+  grid-template-columns:170px 1fr 200px;
+  align-items:center;
+  padding:18px 28px;
+  box-shadow:var(--shadow);
+}
+.insight-title{color:var(--primary2);font-weight:800;font-size:16px;border-right:1px solid var(--border);height:52px;display:flex;align-items:center;gap:12px}
+.insight-text{font-size:15px;line-height:1.55;padding-left:24px}
+.insight button{justify-self:end;width:182px;height:42px;border-radius:6px;background:transparent;border:1px solid var(--primary);color:var(--primary2);font-weight:700;cursor:pointer}
+svg{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:2}
+
+/* ── RISK & OPPORTUNITIES PANEL ─────────────────── */
+.risk-panel{min-height:160px}
+.risk-full-wrap{padding:0 24px 24px;}
+.risk-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.risk-card{
+  border-radius:7px;padding:14px 16px;cursor:pointer;
+  transition:opacity .18s, transform .15s;border-left:3px solid transparent;
+}
+.risk-card:hover{opacity:.82;transform:translateY(-1px)}
+.risk-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.risk-sev{font-size:10px;font-weight:800;letter-spacing:.8px}
+.risk-ask{font-size:10px;color:var(--muted)}
+.risk-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px}
+.risk-detail{font-size:11px;color:var(--muted);line-height:1.45}
+
+/* ── ACTION STATUS BUTTONS ──────────────────────── */
+.act-status-row{display:flex;gap:5px;margin-top:6px}
+.act-btn{
+  font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;
+  border:1px solid var(--border);background:transparent;color:var(--muted);
+  cursor:pointer;transition:all .12s;letter-spacing:.3px;
+}
+.act-btn:hover{color:var(--text);border-color:var(--primary2)}
+.act-btn.active-Open{background:rgba(255,204,24,.12);border-color:var(--warning);color:var(--warning)}
+.act-btn.active-Closed{background:rgba(101,201,71,.12);border-color:var(--ok);color:var(--ok)}
+.act-btn.active-Escalated{background:rgba(255,77,61,.12);border-color:var(--danger);color:var(--danger)}
+
+/* ── SHIMMER ────────────────────────────────────── */
+.shimmer{
+  background:linear-gradient(90deg,var(--surface2) 25%,rgba(255,255,255,.04) 50%,var(--surface2) 75%);
+  background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:4px;
+}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+@media(max-width:1200px){
+  .topbar{grid-template-columns:1fr}
+  .layout{grid-template-columns:1fr 1fr 1fr 1fr}
+  .sidebar{display:none}
+  .util-panel{grid-column:1/3;grid-row:auto}
+  .ar-panel{grid-column:3/5;grid-row:auto}
+  .actions-panel{grid-column:1/3;grid-row:auto}
+  .ai-center-panel{grid-column:3/5;grid-row:auto}
+  .right{grid-column:1/5;grid-row:auto}
+}
+@media(max-width:860px){
+  .layout{grid-template-columns:1fr 1fr}
+  .util-panel,.ar-panel,.actions-panel,.ai-center-panel,.right{grid-column:1/3;grid-row:auto}
+  .projects-panel,.ai-center-panel{grid-column:span 1}
+  .kpi{min-height:130px}
+  .insight{grid-template-columns:1fr;gap:12px}
+  .insight-title{border-right:0}
+  .risk-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:540px){
+  .risk-grid{grid-template-columns:1fr}
+}
+[dir="rtl"] .risk-card{border-left:none;border-right:3px solid transparent}
+</style>
+</head>
+<body class="theme-blue">
+<div class="app">
+
+  <main class="main">
+    <!-- TOP BAR -->
+    <section class="topbar">
+      <div class="brand">
+        <div class="logo">ZFP</div>
+        <div>
+          <h1 id="lbl-appName" data-t="appName">ZFP CEO ADVISOR</h1>
+          <p id="lbl-appSub" data-t="appSub">Executive Dashboard</p>
+        </div>
+      </div>
+      <div class="center-tools">
+        <div class="badge" id="lbl-week">Week 26
+          <svg width="17" height="17" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        </div>
+        <div class="badge alert" id="alert-badge" style="cursor:pointer" onclick="scrollToRisks()">
+          <svg width="17" height="17" viewBox="0 0 24 24"><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+          <span id="alert-text">2 Alerts</span>
+        </div>
+      </div>
+      <div class="right-tools">
+        <!-- Theme picker dropdown -->
+        <div class="theme-picker" id="theme-picker">
+          <button class="theme-toggle-btn" onclick="toggleThemeMenu()" title="Change theme">
+            <svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 010 20M2 12h20"/></svg>
+          </button>
+          <div class="theme-menu" id="theme-menu">
+            <button class="theme-opt active" data-theme="blue" data-mode="dark">
+              <span class="swatch" style="background:#1555bd"></span><span class="swatch" style="background:#1f6fd6"></span><span class="swatch" style="background:#0e356e"></span>
+              <span>Blue Dark</span>
+            </button>
+            <button class="theme-opt" data-theme="blue" data-mode="light">
+              <span class="swatch" style="background:#5cc9f2"></span><span class="swatch" style="background:#55c1dc"></span><span class="swatch" style="background:#42c2cc"></span>
+              <span>Blue Light</span>
+            </button>
+            <button class="theme-opt" data-theme="zfp" data-mode="dark">
+              <span class="swatch" style="background:#ff4b32"></span><span class="swatch" style="background:#f5a400"></span><span class="swatch" style="background:#5a3b12"></span>
+              <span>ZFP Dark</span>
+            </button>
+          </div>
+        </div>
+        <!-- Language toggle -->
+        <div class="lang">
+          <button class="active" id="btn-en" onclick="setLang('en')">EN</button>
+          <button id="btn-ar" onclick="setLang('ar')">AR</button>
+        </div>
+        <!-- Dark / Light mode toggle -->
+        <div class="mode-toggle">
+          <button class="mode-dot light-dot" onclick="setMode('light')" title="Light mode"></button>
+          <button class="mode-dot dark-dot active" onclick="setMode('dark')" title="Dark mode"></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <!-- SIDEBAR -->
+      <aside class="sidebar">
+        <div class="sidebar-logo">
+          <img src="/static/logo.png" alt="ZFP" onerror="this.style.display='none'"/>
+          <div class="sidebar-logo-text">
+            <div class="name" id="sb-name">ZFP CEO Advisor</div>
+            <div class="sub" id="sb-sub">Executive Dashboard</div>
+          </div>
+        </div>
+        <nav class="sidebar-nav">
+          <a class="nav-item" href="/"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span data-t="navHome">Home</span></a>
+          <a class="nav-item" href="/advisor/"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span data-t="navAdvisor">Advisor</span></a>
+          <a class="nav-item" href="/dashboard/"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span data-t="navDash">Dashboards</span></a>
+          <a class="nav-item" href="/finance/"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span data-t="navFinance">Finance</span></a>
+          <a class="nav-item" href="/project-analyzer/"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><span data-t="navProjects">Project Analyzer</span></a>
+          <a class="nav-item active" href="/exec/register/"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 16l4-4 3 3 5-6"/></svg><span data-t="navExec">Executive Dashboard</span></a>
+          <a class="nav-item" style="cursor:default;" onclick="return false;"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span data-t="navWorkforce">Workforce</span><span class="nav-badge" data-t="soon">Soon</span></a>
+          <a class="nav-item" style="cursor:default;" onclick="return false;"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span data-t="navDepts">Departments</span><span class="nav-badge" data-t="soon">Soon</span></a>
+          <a class="nav-item" style="cursor:default;" onclick="return false;"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg><span data-t="navReports">Reports</span><span class="nav-badge" data-t="soon">Soon</span></a>
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="avatar-circle">AB</div>
+          <div class="user-info">
+            <div class="uname">ZFP CEO Advisor</div>
+            <div class="urole">Business Intelligence</div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- KPI ROW (cols 2-5, row 1) -->
+      <div class="card kpi" style="grid-column:2;grid-row:1" onclick="askFromKpi(this)" data-ask="We have {employees} active employees this week. What does this headcount mean for our capacity and project pipeline?" data-ask-ar="استفسار عن الموظفين النشطين">
+        <div class="kpi-title" data-t="kpiEmployees">Total Employees</div>
+        <div class="kpi-value" id="val-employees">757</div>
+        <div class="kpi-sub blue" id="sub-employees">↑ +18 vs last week</div>
+        <div class="kpi-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+      </div>
+      <div class="card kpi" style="grid-column:3;grid-row:1" onclick="askFromKpi(this)" data-ask="Our billable utilization is {util}%, which is {diff} points below our 65% target. What are the top actions I should take this week as CEO?" data-ask-ar="استفسار عن نسبة الاستخدام">
+        <div class="kpi-title" data-t="kpiUtil">Utilization Rate</div>
+        <div class="kpi-value" id="val-util">54.5%</div>
+        <div class="kpi-sub red" id="sub-util">↓ 10.5 pts below 65% target</div>
+        <div class="kpi-icon"><svg viewBox="0 0 24 24"><path d="M21.2 15.9A10 10 0 118.1 2.8"/><path d="M22 12A10 10 0 0012 2v10z"/></svg></div>
+      </div>
+      <div class="card kpi" style="grid-column:4;grid-row:1" onclick="askFromKpi(this)" data-ask="We have {projects} active projects. Which BUs are driving the most revenue and where is the pipeline strongest?" data-ask-ar="استفسار عن المشاريع النشطة">
+        <div class="kpi-title" data-t="kpiProjects">Active Projects</div>
+        <div class="kpi-value" id="val-projects">233</div>
+        <div class="kpi-sub blue" id="sub-projects">↑ +7 vs last week</div>
+        <div class="kpi-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2M2 13h20"/></svg></div>
+      </div>
+      <div class="card kpi" style="grid-column:5;grid-row:1" onclick="askFromKpi(this)" data-ask="Our contract portfolio is SAR {contract} with SAR {invoiced} invoiced. How is revenue recognition performing?" data-ask-ar="استفسار عن محفظة العقود">
+        <div class="kpi-title" data-t="kpiPortfolio">Contract Portfolio</div>
+        <div class="kpi-value" id="val-portfolio">SAR 239M</div>
+        <div class="kpi-sub blue" id="sub-portfolio">Invoiced: SAR 132M (55.2%)</div>
+        <div class="kpi-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 6v12M16 8H10.5a2.5 2.5 0 000 5H13a2.5 2.5 0 010 5H8"/></svg></div>
+      </div>
+
+        <!-- UTILIZATION BY BU -->
+        <div class="panel util-panel">
+          <h3 data-t="panelUtil">Utilization by Business Unit</h3>
+          <div id="bu-rows">
+            <div class="row"><span>Supervision</span><div class="bar-track"><div class="bar" style="width:61%"></div></div><b>61%</b></div>
+            <div class="row"><span>Design</span><div class="bar-track"><div class="bar" style="width:47%"></div></div><b>47%</b></div>
+            <div class="row"><span>Project Management</span><div class="bar-track"><div class="bar" style="width:44%"></div></div><b>44%</b></div>
+            <div class="row"><span>Planning</span><div class="bar-track"><div class="bar" style="width:38%"></div></div><b>38%</b></div>
+            <div class="row"><span>Corporate</span><div class="bar-track"><div class="bar" style="width:12%"></div></div><b>12%</b></div>
+          </div>
+          <div class="axis"><span>0%</span><span>20%</span><span>40%</span><span>60%</span><span>80%</span><span>100%</span></div>
+        </div>
+
+        <!-- AR STATUS -->
+        <div class="panel ar-panel">
+          <h3 data-t="panelAR">AR Status Overview</h3>
+          <div class="donut-wrap">
+            <div class="donut" id="ar-donut">
+              <div class="donut-center"><span>SAR</span><b id="val-ar-total">32.3M</b><span data-t="outstanding">Outstanding</span></div>
+            </div>
+            <div class="legend">
+              <div class="legend-line"><span class="leg-dot"></span><div data-t="arCurrent">Current (0–30)<br><b id="val-ar-current">SAR 11.8M (36%)</b></div></div>
+              <div class="legend-line"><span class="leg-dot two"></span><div data-t="ar3060">30–60 Days<br><b id="val-ar-mid">SAR 8.5M (26%)</b></div></div>
+              <div class="legend-line"><span class="leg-dot red"></span><div data-t="arRisk">60+ Days (At Risk)<br><b id="val-ar-risk" style="color:var(--danger)">SAR 20.5M (63%)</b></div></div>
+              <div style="color:var(--primary2);margin-top:8px"><span data-t="avgAge">Average Age:</span> <span id="val-ar-age">93</span> <span data-t="days">days</span></div>
+            </div>
+          </div>
+        </div>
+
+      <!-- OPEN ACTIONS (cols 1-3, row 3) -->
+      <div class="panel actions-panel">
+        <h3 data-t="panelActions">Open Actions <span id="actions-count-badge" style="float:right;background:color-mix(in srgb,var(--primary) 25%,transparent);color:var(--primary2);padding:5px 10px;border-radius:6px;text-transform:none;font-weight:500">5 Open</span></h3>
+        <table class="table" id="actions-table"><!-- populated by JS --></table>
+        <div class="panel-link" onclick="scrollToRisks()">View all risks & actions →</div>
+      </div>
+
+      <!-- AI ADVISOR (cols 4-5, row 3) -->
+      <div class="panel ai-center-panel">
+        <div class="ai-title"><span class="spark">✦</span> <span data-t="aiTitle">AI ADVISOR</span></div>
+        <div class="ai-messages" id="ai-messages">
+          <div class="ai-empty" id="ai-welcome-head" data-t="aiWelcome">Welcome, Mr. CEO</div>
+          <div class="ai-welcome" id="ai-welcome-body" data-t="aiWelcomeSub">I'm your AI advisor. Click any card or action to ask, or type below.</div>
+        </div>
+        <div class="chips-row" id="chips-row">
+          <div class="question" onclick="askAI('How is utilization this week?')">How is utilization this week?</div>
+          <div class="question" onclick="askAI('What is the AR at risk?')">What is the AR at risk?</div>
+          <div class="question" onclick="askAI('Show top 5 projects by revenue')">Show top 5 projects by revenue</div>
+          <div class="question" onclick="askAI('What are the key risks this week?')">What are the key risks?</div>
+        </div>
+        <div class="input-row">
+          <textarea id="chat-input" placeholder="Type your question..." onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+          <button class="send-btn" id="send-btn" onclick="submitChat()">➤</button>
+        </div>
+        <div class="disclaimer" data-t="disclaimer">AI responses may contain inaccuracies.<br>Please verify critical information.</div>
+      </div>
+
+      <!-- RIGHT PANEL: TOP PROJECTS (col 6, rows 1-2) -->
+      <aside class="right">
+        <div class="panel projects-panel">
+          <h3 data-t="panelProjects">Top Projects by Revenue</h3>
+          <div class="project-row"><span>King Salman Park</span><div class="bar-track"><div class="bar" style="width:95%"></div></div><b>SAR 45.6M</b></div>
+          <div class="project-row"><span>Neom Infrastructure</span><div class="bar-track"><div class="bar" style="width:82%"></div></div><b>SAR 38.2M</b></div>
+          <div class="project-row"><span>Diriyah Gate</span><div class="bar-track"><div class="bar" style="width:65%"></div></div><b>SAR 27.4M</b></div>
+          <div class="project-row"><span>Red Sea Development</span><div class="bar-track"><div class="bar" style="width:50%"></div></div><b>SAR 22.1M</b></div>
+          <div class="project-row"><span>Qiddiya Entertainment</span><div class="bar-track"><div class="bar" style="width:40%"></div></div><b>SAR 18.7M</b></div>
+          <div class="panel-link">View all projects →</div>
+        </div>
+      </aside>
+    </section>
+
+    <!-- RISK & OPPORTUNITIES — full width -->
+    <div class="risk-full-wrap">
+      <div class="panel risk-panel" id="risk-section">
+        <h3><span data-t="panelRisk">RISK REGISTER & OPPORTUNITIES</span> <span style="float:right;font-size:11px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0" data-t="riskSub">Auto-generated from live data</span></h3>
+        <div class="risk-grid" id="risk-panel">
+          <div class="shimmer" style="height:78px;border-radius:7px"></div>
+          <div class="shimmer" style="height:78px;border-radius:7px"></div>
+          <div class="shimmer" style="height:78px;border-radius:7px"></div>
+          <div class="shimmer" style="height:78px;border-radius:7px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI INSIGHT BAR -->
+    <section class="insight">
+      <div class="insight-title">✦ <span data-t="insightTitle">AI INSIGHT</span></div>
+      <div class="insight-text" id="insight-text">
+        Utilization rate is 54.5%, driven by Design BU at 47%.<br>
+        AR at risk (60+ days) stands at SAR 20.5M. Immediate collection action recommended.
+      </div>
+      <button onclick="askAI('Give me a full executive briefing on this week\'s performance, key risks, and recommended actions.')" data-t="insightBtn">View Full Insights →</button>
+    </section>
+  </main>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   TRANSLATIONS
+═══════════════════════════════════════════════════════ */
+const T = {
+  en: {
+    appName:'ZFP CEO ADVISOR', appSub:'Executive Dashboard',
+    week:'Week 26', alerts:(n)=>`${n} Alert${n!==1?'s':''}`,
+    navHome:'Home', navAdvisor:'Advisor', navDash:'Dashboards',
+    navFinance:'Finance', navProjects:'Project Analyzer', navExec:'Executive Dashboard',
+    navWorkforce:'Workforce', navDepts:'Departments', navReports:'Reports', soon:'Soon',
+    lastUpdated:'Last updated', allNormal:'All systems normal',
+    kpiEmployees:'Total Employees', kpiUtil:'Utilization Rate',
+    kpiProjects:'Active Projects', kpiPortfolio:'Contract Portfolio',
+    panelUtil:'Utilization by Business Unit', panelAR:'AR Status Overview',
+    panelActions:'Open Actions', panelProjects:'Top Projects by Revenue',
+    panelRisk:'RISK REGISTER & OPPORTUNITIES', riskSub:'Auto-generated from live data',
+    aiTitle:'AI ADVISOR', aiWelcome:'Welcome, Mr. CEO',
+    aiWelcomeSub:"I'm your AI advisor. Click any card or action to ask, or type below.",
+    chatPlaceholder:'Type your question...',
+    disclaimer:'AI responses may contain inaccuracies.\nPlease verify critical information.',
+    outstanding:'Outstanding', avgAge:'Average Age:', days:'days',
+    arCurrent:'Current (0–30)', ar3060:'30–60 Days', arRisk:'60+ Days (At Risk)',
+    insightTitle:'AI INSIGHT', insightBtn:'View Full Insights →',
+    open:'Open', closed:'Closed', escalated:'Escalated',
+    high:'HIGH', medium:'MEDIUM', low:'LOW',
+    critical:'CRITICAL', opportunity:'OPPORTUNITY',
+    askAI:'Ask AI',
+    noRisks:'No critical risks detected this week.',
+    actionsOpen:(n)=>`${n} Open`,
+  },
+  ar: {
+    appName:'مستشار الرئيس التنفيذي لمجموعة زهير فايز', appSub:'لوحة البيانات التنفيذية',
+    week:'الأسبوع 26', alerts:(n)=>`${n} تنبيه`,
+    navHome:'الرئيسية', navAdvisor:'المستشار', navDash:'لوحات البيانات',
+    navFinance:'المالية', navProjects:'محلل المشاريع', navExec:'اللوحة التنفيذية',
+    navWorkforce:'القوى العاملة', navDepts:'الأقسام', navReports:'التقارير', soon:'قريبًا',
+    lastUpdated:'آخر تحديث', allNormal:'جميع الأنظمة تعمل',
+    kpiEmployees:'إجمالي الموظفين', kpiUtil:'نسبة الاستخدام',
+    kpiProjects:'المشاريع النشطة', kpiPortfolio:'محفظة العقود',
+    panelUtil:'الاستخدام حسب وحدة الأعمال', panelAR:'نظرة عامة على الذمم المدينة',
+    panelActions:'الإجراءات المفتوحة', panelProjects:'أفضل المشاريع بالإيرادات',
+    panelRisk:'سجل المخاطر والفرص', riskSub:'مُولَّد تلقائياً من البيانات المباشرة',
+    aiTitle:'المستشار الذكي', aiWelcome:'مرحباً يا سيادة الرئيس',
+    aiWelcomeSub:'أنا مستشارك الذكي. انقر على أي بطاقة أو اكتب سؤالك أدناه.',
+    chatPlaceholder:'اكتب سؤالك...',
+    disclaimer:'قد تحتوي استجابات الذكاء الاصطناعي على أخطاء.\nيرجى التحقق من المعلومات الهامة.',
+    outstanding:'إجمالي المستحقات', avgAge:'متوسط العمر:', days:'يوم',
+    arCurrent:'حالية (0–30)', ar3060:'30–60 يوم', arRisk:'60+ يوم (في خطر)',
+    insightTitle:'تحليل الذكاء الاصطناعي', insightBtn:'عرض التحليل الكامل →',
+    open:'مفتوح', closed:'مغلق', escalated:'مُصعَّد',
+    high:'عالي', medium:'متوسط', low:'منخفض',
+    critical:'حرج', opportunity:'فرصة',
+    askAI:'اسأل المستشار',
+    noRisks:'لا توجد مخاطر حرجة هذا الأسبوع.',
+    actionsOpen:(n)=>`${n} مفتوح`,
+  }
+};
+
+/* ═══════════════════════════════════════════════════════
+   STATE & DEMO DATA
+═══════════════════════════════════════════════════════ */
+let lang = sessionStorage.getItem('zfp_lang') || 'en';
+let liveKpi = null, liveFinance = null;
+let actions = [], chatHistory = [];
+const ACTIONS_KEY = 'zfp_exec_actions_v1';
+const CHAT_KEY   = 'zfp_chat_v1';
+
+const DEMO_ACTIONS = [
+  { id:'ACT-001', desc:'Develop billable utilization improvement plan — Design BU at 47%, 18 points below target', owner:'COO', due:'Jun 22', priority:'High', status:'Open', context:'Design BU utilization declined 4 consecutive weeks. 79 employees, only 37 on billable projects.' },
+  { id:'ACT-002', desc:'CFO to present Finance data validation timeline to CEO', owner:'CFO', due:'Jun 22', priority:'High', status:'Open', context:'Finance dashboard showing demo data. Real data connection pending CFO approval.' },
+  { id:'ACT-003', desc:'Review top AR at risk projects with collections team — SAR 20.5M overdue 60+ days', owner:'CFO', due:'Jun 25', priority:'High', status:'Open', context:'11 projects with AR age over 60 days. Al Nakheel (SAR 6M, 92 days) highest risk.' },
+  { id:'ACT-004', desc:'Saudization improvement plan for Design BU — currently 10% vs 20% Nitaqat target', owner:'HR Director', due:'Jun 30', priority:'Medium', status:'Open', context:'Overall Saudization 24%. Design BU significantly below compliance threshold.' },
+  { id:'ACT-005', desc:'Investigate 4-week utilization decline trend — from 78% to 54.5%', owner:'COO', due:'Jun 25', priority:'High', status:'Open', context:'Week 23: 78%, Week 24: 47%, Week 25: 62%, Week 26: 54.5%. Volatility suggests pipeline gaps.' }
+];
+
+const DEMO_KPI = {
+  headcount:757, util:54.5, projects:233,
+  total_contract:239000000, total_invoiced:132500000, saudi_pct:24,
+  util_by_unit:[
+    {unit:'Supervision', util:61},{unit:'Design', util:47},
+    {unit:'Project Management', util:44},{unit:'Planning', util:38},{unit:'Corporate', util:12}
+  ]
+};
+const DEMO_FINANCE = {
+  outstanding_ar:32300000, ar_at_risk:20500000, ar_critical:2100000,
+  avg_ar_age:93, avg_margin:44, over_budget_count:2, over_budget_amount:3200000,
+  total_invoiced:132500000, total_ar:32300000
+};
+
+/* ═══════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  loadActionStates();
+  applyLang(lang);
+  renderActions();
+  fetchLiveData();
+  loadChatHistory();
+});
+
+/* ═══════════════════════════════════════════════════════
+   LANGUAGE
+═══════════════════════════════════════════════════════ */
+function setLang(l) {
+  lang = l;
+  sessionStorage.setItem('zfp_lang', l);
+  applyLang(l);
+}
+
+function applyLang(l) {
+  const t = T[l];
+  document.documentElement.lang = l;
+  document.documentElement.dir = l === 'ar' ? 'rtl' : 'ltr';
+
+  // Lang buttons
+  document.getElementById('btn-en').classList.toggle('active', l==='en');
+  document.getElementById('btn-ar').classList.toggle('active', l==='ar');
+
+  // All [data-t] elements
+  document.querySelectorAll('[data-t]').forEach(el => {
+    const key = el.dataset.t;
+    if (t[key] !== undefined) el.textContent = t[key];
+  });
+
+  // Chat placeholder
+  const inp = document.getElementById('chat-input');
+  if (inp) inp.placeholder = t.chatPlaceholder;
+
+  // Week / alert badge
+  const wb = document.getElementById('lbl-week');
+  if (wb) { wb.childNodes[0].textContent = t.week + ' '; }
+
+  // Re-render chips
+  renderChips();
+
+  // Re-apply KPI subtexts and risk panel with current lang
+  applyKpiData(liveKpi || DEMO_KPI, liveFinance || DEMO_FINANCE);
+  renderRisksPanel(computeRisks(liveKpi || DEMO_KPI, liveFinance || DEMO_FINANCE));
+  renderActions();
+}
+
+/* ═══════════════════════════════════════════════════════
+   LIVE DATA
+═══════════════════════════════════════════════════════ */
+async function fetchLiveData() {
+  const [kr, fr] = await Promise.allSettled([
+    fetch('/kpis').then(r => r.ok ? r.json() : null).catch(()=>null),
+    fetch('/kpis/finance').then(r => r.ok ? r.json() : null).catch(()=>null)
+  ]);
+  liveKpi     = (kr.status==='fulfilled' && kr.value) ? kr.value : DEMO_KPI;
+  liveFinance = (fr.status==='fulfilled' && fr.value) ? fr.value : DEMO_FINANCE;
+  applyKpiData(liveKpi, liveFinance);
+  renderRisksPanel(computeRisks(liveKpi, liveFinance));
+}
+
+function applyKpiData(kpi, fin) {
+  const t = T[lang];
+  const util      = kpi.util || kpi.utilization || DEMO_KPI.util;
+  const headcount = kpi.headcount || kpi.total_employees || DEMO_KPI.headcount;
+  const projects  = kpi.projects || kpi.active_projects || DEMO_KPI.projects;
+  const contract  = kpi.total_contract || DEMO_KPI.total_contract;
+  const invoiced  = kpi.total_invoiced || fin.total_invoiced || DEMO_FINANCE.total_invoiced;
+  const arOut     = fin.outstanding_ar || DEMO_FINANCE.outstanding_ar;
+  const arRisk    = fin.ar_at_risk || DEMO_FINANCE.ar_at_risk;
+  const arAge     = fin.avg_ar_age || DEMO_FINANCE.avg_ar_age;
+
+  // KPI values
+  setText('val-employees', headcount.toLocaleString());
+  setText('val-util', util.toFixed(1) + '%');
+  setText('val-projects', projects.toLocaleString());
+  setText('val-portfolio', 'SAR ' + fmtM(contract));
+
+  // KPI subs
+  const utilDiff = (65 - util).toFixed(1);
+  const subUtilEl = document.getElementById('sub-util');
+  if (subUtilEl) {
+    if (util < 65) {
+      subUtilEl.textContent = lang==='ar' ? `↓ ${utilDiff} نقطة دون هدف 65%` : `↓ ${utilDiff} pts below 65% target`;
+      subUtilEl.className = 'kpi-sub red';
+    } else {
+      subUtilEl.textContent = lang==='ar' ? `↑ ${(util-65).toFixed(1)} نقطة فوق الهدف` : `↑ ${(util-65).toFixed(1)} pts above target`;
+      subUtilEl.className = 'kpi-sub blue';
+    }
+  }
+  setText('sub-employees', lang==='ar' ? `↑ +18 مقارنة بالأسبوع الماضي` : `↑ +18 vs last week`);
+  setText('sub-projects',  lang==='ar' ? `↑ +7 مقارنة بالأسبوع الماضي`  : `↑ +7 vs last week`);
+  setText('sub-portfolio', lang==='ar'
+    ? `مُفوتَر: ريال ${fmtM(invoiced)} (${Math.round(invoiced/contract*100)}%)`
+    : `Invoiced: SAR ${fmtM(invoiced)} (${Math.round(invoiced/contract*100)}%)`);
+
+  // AR donut
+  setText('val-ar-total', fmtM(arOut));
+  setText('val-ar-age', arAge);
+  const atRiskPct = Math.round(arRisk/arOut*100);
+  setText('val-ar-risk', `SAR ${fmtM(arRisk)} (${atRiskPct}%)`);
+  // Update donut gradient
+  const donut = document.getElementById('ar-donut');
+  if (donut) {
+    const currentPct = Math.max(0, 100 - atRiskPct - 26);
+    donut.style.background = `conic-gradient(var(--primary2) 0 ${currentPct}%,var(--primary) ${currentPct}% ${currentPct+26}%,var(--danger) ${currentPct+26}% 100%)`;
+  }
+
+  // BU rows
+  const units = kpi.util_by_unit || DEMO_KPI.util_by_unit;
+  const buEl = document.getElementById('bu-rows');
+  if (buEl) {
+    buEl.innerHTML = units.map(bu => {
+      const pct = bu.util || bu.utilization || 0;
+      return `<div class="row"><span>${bu.unit||bu.name}</span><div class="bar-track"><div class="bar" style="width:${pct}%"></div></div><b>${pct}%</b></div>`;
+    }).join('');
+  }
+
+  // KPI ask attrs (dynamic values)
+  const empCard = document.querySelector('[data-ask*="{employees}"]');
+  if (empCard) empCard.dataset.ask = empCard.dataset.ask.replace('{employees}', headcount);
+  const utilCard = document.querySelector('[data-ask*="{util}"]');
+  if (utilCard) utilCard.dataset.ask = utilCard.dataset.ask.replace('{util}', util).replace('{diff}', utilDiff);
+  const projCard = document.querySelector('[data-ask*="{projects}"]');
+  if (projCard) projCard.dataset.ask = projCard.dataset.ask.replace('{projects}', projects);
+  const portCard = document.querySelector('[data-ask*="{contract}"]');
+  if (portCard) portCard.dataset.ask = portCard.dataset.ask.replace('{contract}', fmtM(contract)).replace('{invoiced}', fmtM(invoiced));
+
+  // Insight bar
+  const ins = document.getElementById('insight-text');
+  if (ins) {
+    if (lang === 'ar') {
+      ins.innerHTML = `نسبة الاستخدام ${util}%، وحدة التصميم عند 47%.<br>الذمم المدينة في خطر (60+ يوم) تبلغ ريال ${fmtM(arRisk)}. يُنصح باتخاذ إجراءات تحصيل فورية.`;
+    } else {
+      ins.innerHTML = `Utilization rate is ${util}%, driven by Design BU at 47%.<br>AR at risk (60+ days) stands at SAR ${fmtM(arRisk)}. Immediate collection action recommended.`;
+    }
+  }
+
+  // Alert badge count (risks)
+  updateAlertBadge(liveKpi || DEMO_KPI, liveFinance || DEMO_FINANCE);
+}
+
+function updateAlertBadge(kpi, fin) {
+  const util   = kpi.util || kpi.utilization || 0;
+  const arRisk = fin.ar_at_risk || 0;
+  let count = 0;
+  if (util < 65) count++;
+  if (arRisk > 5000000) count++;
+  const units = kpi.util_by_unit || [];
+  units.forEach(bu => { if ((bu.util||bu.utilization||0) < 40) count++; });
+  const t = T[lang];
+  setText('alert-text', t.alerts(count));
+}
+
+/* ═══════════════════════════════════════════════════════
+   ACTIONS
+═══════════════════════════════════════════════════════ */
+function loadActionStates() {
+  const saved = localStorage.getItem(ACTIONS_KEY);
+  if (saved) {
+    try {
+      const states = JSON.parse(saved);
+      actions = DEMO_ACTIONS.map(a => ({...a, status: states[a.id] || a.status}));
+    } catch(e) { actions = [...DEMO_ACTIONS]; }
+  } else {
+    actions = [...DEMO_ACTIONS];
+  }
+}
+
+function saveActionStates() {
+  const states = {};
+  actions.forEach(a => { states[a.id] = a.status; });
+  localStorage.setItem(ACTIONS_KEY, JSON.stringify(states));
+}
+
+function renderActions() {
+  const table = document.getElementById('actions-table');
+  if (!table) return;
+  const t = T[lang];
+  const priorityDot = p => `<span class="priority${p==='Medium'?' mid':''}"></span>`;
+
+  const visibleActions = actions.filter(a => a.status !== 'Closed');
+  table.innerHTML = visibleActions.map(a => `
+    <tr style="cursor:pointer" onclick="askFromAction('${a.id}')">
+      <td style="color:var(--primary2);font-weight:700">${a.id}</td>
+      <td>${a.desc}</td>
+      <td>${priorityDot(a.priority)}${t[a.priority.toLowerCase()]||a.priority}</td>
+      <td>${a.owner}</td>
+      <td>${a.due}</td>
+    </tr>
+    <tr>
+      <td colspan="5" style="padding-bottom:6px">
+        <div class="act-status-row">
+          <button class="act-btn ${a.status==='Open'?'active-Open':''}" onclick="event.stopPropagation();setStatus('${a.id}','Open')">${t.open}</button>
+          <button class="act-btn ${a.status==='Closed'?'active-Closed':''}" onclick="event.stopPropagation();setStatus('${a.id}','Closed')">${t.closed}</button>
+          <button class="act-btn ${a.status==='Escalated'?'active-Escalated':''}" onclick="event.stopPropagation();setStatus('${a.id}','Escalated')">${t.escalated}</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+
+  const open = actions.filter(a => a.status==='Open').length;
+  setText('actions-count-badge', T[lang].actionsOpen(open));
+}
+
+function setStatus(id, status) {
+  const a = actions.find(x => x.id === id);
+  if (!a) return;
+  a.status = status;
+  saveActionStates();
+  renderActions();
+  fetch(`/exec/actions/${id}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status}) }).catch(()=>{});
+}
+
+/* ═══════════════════════════════════════════════════════
+   RISK & OPPORTUNITIES
+═══════════════════════════════════════════════════════ */
+function computeRisks(kpi, fin) {
+  const ar = lang === 'ar';
+  const risks = [], opps = [];
+  const util      = kpi.util || kpi.utilization || 0;
+  const saudi     = kpi.saudi_pct || kpi.saudization || 0;
+  const arRisk    = fin.ar_at_risk || 0;
+  const arCrit    = fin.ar_critical || 0;
+  const margin    = fin.avg_margin || 0;
+  const obCount   = fin.over_budget_count || 0;
+  const obAmt     = fin.over_budget_amount || 0;
+  const totalInv  = fin.total_invoiced || 0;
+  const totalAR   = fin.total_ar || fin.outstanding_ar || 0;
+  const units     = kpi.util_by_unit || DEMO_KPI.util_by_unit;
+
+  if (util < 55) risks.push({ id:'R-001', sev:'HIGH', color:'var(--danger)', bg:'rgba(255,77,61,.09)', bdr:'#ff4d3d',
+    title: ar?'معدل الاستخدام حرج':'Billable Utilization Critical',
+    detail: ar?`${util}% — أقل بـ ${(65-util).toFixed(1)} نقطة عن هدف 65%. خطر تسرب الإيرادات.`:`${util}% — ${(65-util).toFixed(1)} pts below 65% target. Revenue leakage risk.`,
+    ask:`Utilization is at ${util}%, well below the 65% target. What immediate actions should I take as CEO to recover this week?` });
+  else if (util < 65) risks.push({ id:'R-001', sev:'MEDIUM', color:'var(--warning)', bg:'rgba(255,204,24,.08)', bdr:'#ffcc18',
+    title: ar?'الاستخدام دون الهدف':'Utilization Below Target',
+    detail: ar?`${util}% — يحتاج مراقبة هذا الأسبوع.`:`${util}% — monitor closely this week.`,
+    ask:`Utilization is at ${util}%, below our 65% target. What should I watch for?` });
+
+  if (arCrit > 0) risks.push({ id:'R-003', sev:'CRITICAL', color:'#ff2213', bg:'rgba(220,38,38,.12)', bdr:'#dc2626',
+    title: ar?'ذمم حرجة — 90+ يوم':'Critical AR — 90+ Days',
+    detail: ar?`ريال ${fmtM(arCrit)} — تصعيد فوري مطلوب.`:`SAR ${fmtM(arCrit)} — immediate escalation to board required.`,
+    ask:`SAR ${fmtM(arCrit)} in AR is over 90 days old. What immediate steps should I take?` });
+
+  if (arRisk > 15000000) risks.push({ id:'R-002', sev:'HIGH', color:'var(--danger)', bg:'rgba(255,77,61,.09)', bdr:'#ff4d3d',
+    title: ar?'الذمم المدينة في خطر':'AR At Risk — Immediate Action',
+    detail: ar?`ريال ${fmtM(arRisk)} متأخرة 60+ يوم. تأثير على التدفق النقدي وشيك.`:`SAR ${fmtM(arRisk)} overdue 60+ days. Cash flow impact imminent.`,
+    ask:`We have SAR ${fmtM(arRisk)} in AR overdue 60+ days. What collection actions should I direct the CFO to take?` });
+  else if (arRisk > 5000000) risks.push({ id:'R-002', sev:'MEDIUM', color:'var(--warning)', bg:'rgba(255,204,24,.08)', bdr:'#ffcc18',
+    title: ar?'مراقبة الذمم المدينة':'AR Aging — Monitor',
+    detail: ar?`ريال ${fmtM(arRisk)} متأخرة 60+ يوم.`:`SAR ${fmtM(arRisk)} overdue 60+ days.`,
+    ask:`SAR ${fmtM(arRisk)} in AR is overdue 60+ days. What's the risk level?` });
+
+  units.forEach(bu => {
+    const pct = bu.util||bu.utilization||0;
+    const name = bu.unit||bu.name;
+    if (pct < 40) risks.push({ id:'R-005', sev:'HIGH', color:'var(--danger)', bg:'rgba(255,77,61,.09)', bdr:'#ff4d3d',
+      title: ar?`${name} — استخدام منخفض جداً`:`${name} BU Critically Underutilized`,
+      detail: ar?`${name} عند ${pct}% — تكاليف الطاقة العاطلة تتراكم.`:`${name} at ${pct}% — bench cost accumulating fast.`,
+      ask:`${name} business unit utilization is only ${pct}%. As CEO, what do I do about this idle capacity?` });
+  });
+
+  if (saudi < 20) risks.push({ id:'R-006', sev:'MEDIUM', color:'var(--warning)', bg:'rgba(255,204,24,.08)', bdr:'#ffcc18',
+    title: ar?'السعودة دون حد نطاقات':'Saudization Below Nitaqat',
+    detail: ar?`${saudi}% — أقل من هدف نطاقات 20%. خطر امتثال.`:`${saudi}% Saudi nationals — below 20% Nitaqat target. Compliance risk.`,
+    ask:`Our Saudization rate is ${saudi}%, below the 20% Nitaqat target. What are the compliance implications?` });
+
+  if (obCount > 2) risks.push({ id:'R-007', sev:'MEDIUM', color:'var(--warning)', bg:'rgba(255,204,24,.08)', bdr:'#ffcc18',
+    title: ar?`${obCount} مشاريع تجاوزت الميزانية`:`${obCount} Projects Over Budget`,
+    detail: ar?`ريال ${fmtM(obAmt)} إجمالي تجاوز.`:`SAR ${fmtM(obAmt)} total overrun. Review project controls.`,
+    ask:`${obCount} projects are over budget by SAR ${fmtM(obAmt)}. What should I do to protect margins?` });
+
+  if (margin < 35 && margin > 0) risks.push({ id:'R-008', sev:'HIGH', color:'var(--danger)', bg:'rgba(255,77,61,.09)', bdr:'#ff4d3d',
+    title: ar?'الهامش دون الحد الأدنى':'Gross Margin Below Threshold',
+    detail: ar?`${margin}% — أقل من الحد الأدنى 35%.`:`${margin}% average margin — below 35% minimum.`,
+    ask:`Our average gross margin is ${margin}%, below our 35% threshold. Which projects are dragging margins down?` });
+
+  if (util > 70) opps.push({ id:'O-001', sev:'OPP', color:'var(--ok)', bg:'rgba(101,201,71,.08)', bdr:'#65c947',
+    title: ar?'استخدام قوي — إشارة توسع':'Strong Utilization — Expansion Signal',
+    detail: ar?`${util}% — طاقة صحية. راجع خط الربع الثالث.`:`${util}% — healthy capacity. Review Q3 pipeline for growth.`,
+    ask:`Utilization is at ${util}%, which is strong. Should we be hiring or chasing more pipeline now?` });
+
+  if (margin > 50) opps.push({ id:'O-002', sev:'OPP', color:'var(--ok)', bg:'rgba(101,201,71,.08)', bdr:'#65c947',
+    title: ar?'أداء الهامش فوق الهدف':'Margin Outperformance',
+    detail: ar?`${margin}% — فوق 50%. حدد ما يقود هذا الأداء.`:`${margin}% average margin — above 50%. Identify what's driving this.`,
+    ask:`Our gross margin is ${margin}%, above our target. Which projects or BUs are driving this?` });
+
+  if (totalInv > 0 && totalAR > 0 && (totalInv - totalAR)/totalInv > 0.85)
+    opps.push({ id:'O-003', sev:'OPP', color:'var(--ok)', bg:'rgba(101,201,71,.08)', bdr:'#65c947',
+      title: ar?'معدل تحصيل قوي':'Strong Cash Collection Rate',
+      detail: ar?'معدل التحصيل فوق 85% — وضع نقدي صحي.':'Collection rate above 85% — healthy cash position.',
+      ask:`Our cash collection rate is strong. How should I deploy this cash advantage strategically?` });
+
+  return { risks, opps };
+}
+
+function renderRisksPanel({ risks, opps }) {
+  const el = document.getElementById('risk-panel');
+  if (!el) return;
+  const t = T[lang];
+
+  const sevLabel = { CRITICAL: t.critical, HIGH: t.high, MEDIUM: t.medium, OPP: t.opportunity };
+  const all = [...risks, ...opps];
+
+  if (!all.length) {
+    el.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--muted)">${t.noRisks}</div>`;
+    return;
+  }
+
+  el.innerHTML = all.map(item => `
+    <div class="risk-card" data-ask="${escAttr(item.ask)}" data-display="${escAttr(sevLabel[item.sev]+' · '+item.id+': '+item.title)}"
+      style="background:${item.bg};border-left-color:${item.bdr};">
+      <div class="risk-card-top">
+        <span class="risk-sev" style="color:${item.color}">${sevLabel[item.sev]} · ${item.id}</span>
+        <span class="risk-ask">↗ ${t.askAI}</span>
+      </div>
+      <div class="risk-title">${item.title}</div>
+      <div class="risk-detail">${item.detail}</div>
+    </div>`).join('');
+
+  el.querySelectorAll('.risk-card').forEach(card => {
+    card.addEventListener('click', () => {
+      askAI(card.dataset.ask, card.dataset.display);
+      document.querySelector('.right').scrollIntoView({ behavior:'smooth' });
+    });
+  });
+}
+
+/* ═══════════════════════════════════════════════════════
+   AI CHAT
+═══════════════════════════════════════════════════════ */
+function loadChatHistory() {
+  try { chatHistory = JSON.parse(sessionStorage.getItem(CHAT_KEY) || '[]'); } catch(e) { chatHistory = []; }
+  renderChat();
+}
+
+function renderChat() {
+  const el = document.getElementById('ai-messages');
+  if (!el) return;
+  if (!chatHistory.length) {
+    el.innerHTML = `<div class="ai-empty" data-t="aiWelcome">${T[lang].aiWelcome}</div><div class="ai-welcome" data-t="aiWelcomeSub">${T[lang].aiWelcomeSub}</div>`;
+    return;
+  }
+  el.innerHTML = chatHistory.map(m => `<div class="msg-${m.role}">${escHtml(m.content)}</div>`).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+async function askAI(question, displayMsg) {
+  const el = document.getElementById('ai-messages');
+  const btn = document.getElementById('send-btn');
+  const inp = document.getElementById('chat-input');
+  const shown = displayMsg !== undefined ? displayMsg : question;
+
+  chatHistory.push({ role:'user', content: shown });
+  renderChat();
+
+  // Clear input if it was a typed message
+  if (displayMsg === undefined && inp) { inp.value = ''; inp.style.height = 'auto'; }
+
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+
+  const thinkId = 'think-' + Date.now();
+  el.innerHTML += `<div class="msg-thinking" id="${thinkId}"><div class="thinking-dots"><span></span><span></span><span></span></div><span>${T[lang].aiTitle === 'AI ADVISOR' ? 'Thinking…' : 'جارٍ التفكير…'}</span></div>`;
+  el.scrollTop = el.scrollHeight;
+
+  const kpi = liveKpi || DEMO_KPI;
+  const fin = liveFinance || DEMO_FINANCE;
+  const context = `You are the AI Chief of Staff for the CEO of Zuhair Fayez Partnership (ZFP Group), a leading A&E firm in Saudi Arabia and Egypt with ${kpi.headcount||757} employees. Week 26, 2026. KPIs: utilization ${kpi.util||54.5}% (target 65%), projects ${kpi.projects||233}, portfolio SAR ${fmtM(kpi.total_contract||239000000)}, AR at risk SAR ${fmtM(fin.ar_at_risk||20500000)}, margin ${fin.avg_margin||44}%, Saudization ${kpi.saudi_pct||24}%. Vision 2030 context. Voice: direct, executive, 2-4 sentences, no bullet points. Respond in ${lang==='ar'?'Arabic':'English'}.`;
+
+  try {
+    const res = await fetch('/ask', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ question, language:lang, context }) });
+    document.getElementById(thinkId)?.remove();
+    if (res.ok) {
+      const data = await res.json();
+      chatHistory.push({ role:'ai', content: data.answer || data.response || data.text || (lang==='ar'?'لم يتم استلام رد.':'No response received.') });
+    } else {
+      chatHistory.push({ role:'ai', content: lang==='ar'?`خطأ ${res.status} — حاول مرة أخرى.`:`Error ${res.status} — please try again.` });
+    }
+  } catch(e) {
+    document.getElementById(thinkId)?.remove();
+    chatHistory.push({ role:'ai', content: lang==='ar'?'تعذّر الوصول إلى المستشار. تحقق من اتصالك.':'Could not reach AI advisor. Check your connection.' });
+  }
+
+  sessionStorage.setItem(CHAT_KEY, JSON.stringify(chatHistory.slice(-10)));
+  renderChat();
+  if (btn) { btn.disabled = false; btn.textContent = '➤'; }
+}
+
+function submitChat() {
+  const inp = document.getElementById('chat-input');
+  const q = inp?.value.trim();
+  if (q) askAI(q);
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitChat(); }
+}
+function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 90) + 'px'; }
+
+function renderChips() {
+  const chips = lang === 'ar'
+    ? ['الاستخدام هذا الأسبوع','الذمم المدينة في خطر','أفضل المشاريع بالإيرادات','ما هي المخاطر الرئيسية؟']
+    : ['How is utilization this week?','What is the AR at risk?','Show top 5 projects by revenue','What are the key risks?'];
+  const el = document.getElementById('chips-row');
+  if (el) el.innerHTML = chips.map(c => `<div class="question" onclick="askAI('${c.replace(/'/g,"\\'")}')">${c}</div>`).join('');
+}
+
+/* ═══════════════════════════════════════════════════════
+   KPI + ACTION CLICK HANDLERS
+═══════════════════════════════════════════════════════ */
+function askFromKpi(el) {
+  const q = el.dataset.ask;
+  const display = el.dataset.askAr && lang==='ar' ? el.dataset.askAr : q;
+  if (q) askAI(q, display);
+  document.querySelector('.right').scrollIntoView({ behavior:'smooth' });
+}
+
+function askFromAction(id) {
+  const a = actions.find(x => x.id === id);
+  if (!a) return;
+  const q = `Action ${a.id}: "${a.desc}". Context: ${a.context} What is the CEO's best next move on this action?`;
+  const display = lang==='ar' ? `استفسار عن الإجراء ${a.id} — ${a.owner}` : `Question about action ${a.id} — ${a.owner}`;
+  askAI(q, display);
+  document.querySelector('.right').scrollIntoView({ behavior:'smooth' });
+}
+
+function scrollToRisks() {
+  document.getElementById('risk-section')?.scrollIntoView({ behavior:'smooth' });
+}
+
+/* ═══════════════════════════════════════════════════════
+   UTILS
+═══════════════════════════════════════════════════════ */
+function fmtM(n) {
+  if (!n) return '0';
+  if (n >= 1000000) { const v = n/1000000; return (v%1===0 ? v.toFixed(0) : v.toFixed(1))+'M'; }
+  return (n/1000).toFixed(0)+'K';
+}
+function setText(id, txt) { const el = document.getElementById(id); if (el && txt!=null) el.textContent = txt; }
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+function escAttr(s) { return String(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+/* ═══════════════════════════════════════════════════════
+   THEME PICKER DROPDOWN
+═══════════════════════════════════════════════════════ */
+const themeOpts = document.querySelectorAll('.theme-opt');
+
+function applyTheme(opt) {
+  document.body.classList.remove('theme-blue','theme-office','theme-zfp','light');
+  document.body.classList.add('theme-' + opt.dataset.theme);
+  if (opt.dataset.mode === 'light') document.body.classList.add('light');
+  themeOpts.forEach(o => o.classList.remove('active'));
+  opt.classList.add('active');
+  // sync mode dots
+  const isLight = opt.dataset.mode === 'light';
+  document.querySelector('.light-dot')?.classList.toggle('active', isLight);
+  document.querySelector('.dark-dot')?.classList.toggle('active', !isLight);
+  localStorage.setItem('zfp-exec-theme', JSON.stringify({theme: opt.dataset.theme, mode: opt.dataset.mode}));
+  document.getElementById('theme-menu').classList.remove('open');
+}
+
+function toggleThemeMenu() {
+  document.getElementById('theme-menu').classList.toggle('open');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', e => {
+  if (!document.getElementById('theme-picker').contains(e.target))
+    document.getElementById('theme-menu').classList.remove('open');
+});
+
+themeOpts.forEach(opt => opt.addEventListener('click', () => applyTheme(opt)));
+
+/* ═══════════════════════════════════════════════════════
+   DARK / LIGHT MODE TOGGLE
+═══════════════════════════════════════════════════════ */
+function setMode(mode) {
+  const activeOpt = document.querySelector('.theme-opt.active');
+  const theme = activeOpt ? activeOpt.dataset.theme : 'blue';
+  // find the opt for this theme+mode, or fake one
+  const target = [...themeOpts].find(o => o.dataset.theme === theme && o.dataset.mode === mode);
+  if (target) { applyTheme(target); return; }
+  // if no matching opt (e.g. ZFP light not in list), just toggle class
+  document.body.classList.toggle('light', mode === 'light');
+  document.querySelector('.light-dot')?.classList.toggle('active', mode === 'light');
+  document.querySelector('.dark-dot')?.classList.toggle('active', mode === 'dark');
+}
+
+// Restore saved theme on load
+try {
+  const saved = JSON.parse(localStorage.getItem('zfp-exec-theme') || 'null');
+  if (saved) {
+    const match = [...themeOpts].find(o => o.dataset.theme === saved.theme && o.dataset.mode === saved.mode);
+    if (match) applyTheme(match);
+  }
+} catch(e) {}
+</script>
+</body>
+</html>

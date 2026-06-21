@@ -1,0 +1,30 @@
+# Secrets
+.env
+logs/.token_cache.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Logs (keep .gitkeep, ignore actual logs)
+logs/*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Generated deploy artifacts
+deploy_chunks/
+*.zip
