@@ -28,3 +28,28 @@ Thumbs.db
 # Generated deploy artifacts
 deploy_chunks/
 *.zip
+
+# recovery artifacts - not part of the application
+_chunks2/
+deploy_chunks/
+recovered/
+output/
+_resume2.sh
+_chunk.sh
+_fix_chart_b64.txt
+deploy_*.sh
+fix_*.py
+phase*.py
+audit_*.sh
+verify_*.sh
+final_*.sh
+find_demo_data*.sh
+read_*.sh
+inspect_excel.sh
+dedup_and_fix.py
+apply_exec_theme.py
+build_exec_deploy.py
+update_parsers.py
+final_audit_check.py
+files*.zip
+.venv/

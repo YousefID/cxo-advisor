@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZFP — Action Register</title>
+<style>
+  :root {
+    --bg:#0a0c10;--surface:#111318;--surface2:#181c24;
+    --primary:#c9a84c;--primary-light:#e5c76a;--primary-dark:#9b7a24;
+    --primary-rgb:201,168,76;--gold:var(--primary);
+    --white:#fff;--text:#e8eaf0;--muted:#9ca3af;
+    --border:rgba(255,255,255,.07);
+    --green:#22c55e;--red:#ef4444;--amber:#f59e0b;
+    --shadow-glow:rgba(var(--primary-rgb),.15);
+  }
+  html[data-theme="zfp-dark"]{--bg:#0a0c10;--surface:#111318;--surface2:#181c24;--primary:#c9a84c;--primary-light:#e5c76a;--primary-dark:#9b7a24;--primary-rgb:201,168,76;--gold:var(--primary);--white:#fff;--text:#e8eaf0;--muted:#9ca3af;--border:rgba(255,255,255,.07);--shadow-glow:rgba(201,168,76,.15);}
+  html[data-theme="blue-dark"]{--bg:#050914;--surface:#0d1424;--surface2:#151f35;--primary:#3b82f6;--primary-light:#60a5fa;--primary-dark:#1d4ed8;--primary-rgb:59,130,246;--gold:var(--primary);--white:#f8fafc;--text:#eaf2ff;--muted:#9fb3d1;--border:rgba(96,165,250,.14);--shadow-glow:rgba(59,130,246,.18);}
+  html[data-theme="green-dark"]{--bg:#050d0a;--surface:#0d1b17;--surface2:#142821;--primary:#10b981;--primary-light:#34d399;--primary-dark:#047857;--primary-rgb:16,185,129;--gold:var(--primary);--white:#f5fffb;--text:#e9fff6;--muted:#9fc8bb;--border:rgba(52,211,153,.14);--shadow-glow:rgba(16,185,129,.18);}
+  html[data-theme="white-light"]{--bg:#f6f8fb;--surface:#ffffff;--surface2:#eef4ff;--primary:#2563eb;--primary-light:#3b82f6;--primary-dark:#1e40af;--primary-rgb:37,99,235;--gold:var(--primary);--white:#0f172a;--text:#111827;--muted:#64748b;--border:rgba(15,23,42,.10);--shadow-glow:rgba(37,99,235,.13);}
+
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;font-size:14px;line-height:1.5}
+
+  .header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+  .header-left{display:flex;align-items:center;gap:12px}
+  .logo-mark{width:34px;height:34px;background:var(--gold);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#000;letter-spacing:-.5px;flex-shrink:0}
+  html[data-theme="blue-dark"] .logo-mark,html[data-theme="green-dark"] .logo-mark,html[data-theme="white-light"] .logo-mark{color:#fff}
+  .app-name{font-size:15px;font-weight:700;color:var(--white);letter-spacing:.3px}
+  .week-badge{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.5px}
+  .header-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .lang-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;letter-spacing:.5px}
+  .lang-btn.active{background:linear-gradient(135deg,var(--primary-light),var(--primary-dark));color:#fff;border-color:var(--gold)}
+  html[data-theme="zfp-dark"] .lang-btn.active{color:#000}
+  .theme-switcher{display:flex;gap:6px;align-items:center;padding:3px;background:var(--surface2);border:1px solid var(--border);border-radius:999px}
+  .theme-btn{border:1px solid transparent;background:transparent;color:var(--muted);border-radius:999px;padding:4px 9px;font-size:10px;font-weight:800;letter-spacing:.35px;cursor:pointer;transition:all .15s}
+  .theme-btn:hover{color:var(--text);border-color:var(--border)}
+  .theme-btn.active{background:linear-gradient(135deg,var(--primary-light),var(--primary-dark));color:#fff;box-shadow:0 0 18px var(--shadow-glow)}
+  html[data-theme="zfp-dark"] .theme-btn.active{color:#000}
+  html[data-theme="white-light"] .theme-btn.active{color:#fff}
+
+  .s1-header{background:linear-gradient(135deg,var(--surface) 0%,var(--surface2) 100%);border-bottom:1px solid var(--border);padding:28px 24px 20px;text-align:center}
+  .s1-greeting{font-size:13px;color:var(--gold);font-weight:600;letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px}
+  .s1-title{font-size:22px;font-weight:800;color:var(--white);margin-bottom:4px}
+  .s1-sub{font-size:13px;color:var(--muted)}
+
+  .action-stats{display:flex;gap:12px;justify-content:center;padding:16px 24px 0;flex-wrap:wrap}
+  .stat-pill{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600}
+  .stat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+  .actions-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;padding:20px 24px;max-width:1100px;margin:0 auto}
+  .action-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;transition:border-color .2s}
+  .action-card:hover{border-color:rgba(255,255,255,.14)}
+  .action-card.status-Closed{border-left:3px solid var(--green)}
+  .action-card.status-Escalated{border-left:3px solid var(--red)}
+  .action-card.status-Open{border-left:3px solid var(--amber)}
+
+  .ac-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+  .ac-id{font-size:11px;font-weight:700;color:var(--gold);letter-spacing:.8px}
+  .priority-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:.5px}
+  .priority-High{background:rgba(239,68,68,.15);color:var(--red)}
+  .priority-Medium{background:rgba(245,158,11,.15);color:var(--amber)}
+  .priority-Low{background:rgba(34,197,94,.15);color:var(--green)}
+  .ac-desc{font-size:13px;color:var(--text);margin-bottom:6px;font-weight:500;line-height:1.45}
+  .ac-meta{font-size:11px;color:var(--muted);margin-bottom:14px}
+  .ac-meta span{margin-right:10px}
+
+  .ac-btns{display:flex;gap:6px}
+  .ac-btn{flex:1;padding:7px 4px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;letter-spacing:.3px;text-align:center}
+  .ac-btn:hover{border-color:rgba(255,255,255,.2);color:var(--white)}
+  .ac-btn.active-Open{background:rgba(245,158,11,.15);border-color:var(--amber);color:var(--amber)}
+  .ac-btn.active-Closed{background:rgba(34,197,94,.15);border-color:var(--green);color:var(--green)}
+  .ac-btn.active-Escalated{background:rgba(239,68,68,.15);border-color:var(--red);color:var(--red)}
+
+  .build-btn-wrap{padding:16px 24px 40px;max-width:1100px;margin:0 auto}
+  .build-btn{width:100%;padding:16px;background:linear-gradient(135deg,var(--primary-light),var(--primary-dark));color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:.3px;transition:opacity .15s}
+  .build-btn:hover{opacity:.88}
+  html[data-theme="zfp-dark"] .build-btn{color:#000}
+
+  [dir="rtl"] .ac-meta span{margin-right:0;margin-left:10px}
+  [dir="rtl"] .action-card.status-Closed{border-left:none;border-right:3px solid var(--green)}
+  [dir="rtl"] .action-card.status-Escalated{border-left:none;border-right:3px solid var(--red)}
+  [dir="rtl"] .action-card.status-Open{border-left:none;border-right:3px solid var(--amber)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo-mark">ZFP</div>
+    <span class="app-name" id="app-name">ZFP CEO ADVISOR</span>
+    <span class="week-badge">Week 26</span>
+  </div>
+  <div class="header-right">
+    <div class="theme-switcher">
+      <button class="theme-btn" data-theme-btn="zfp-dark"    onclick="setTheme('zfp-dark')">ZFP</button>
+      <button class="theme-btn" data-theme-btn="blue-dark"   onclick="setTheme('blue-dark')">Blue</button>
+      <button class="theme-btn" data-theme-btn="green-dark"  onclick="setTheme('green-dark')">Green</button>
+      <button class="theme-btn" data-theme-btn="white-light" onclick="setTheme('white-light')">White</button>
+    </div>
+    <button class="lang-btn active" onclick="setLang('en')" id="btn-en">EN</button>
+    <button class="lang-btn"        onclick="setLang('ar')" id="btn-ar">AR</button>
+  </div>
+</div>
+
+<div class="s1-header">
+  <div class="s1-greeting" id="s1-greeting">GOOD MORNING, MR. CEO</div>
+  <div class="s1-title"    id="s1-title">Action Register</div>
+  <div class="s1-sub"      id="s1-sub">Review open actions before proceeding to your dashboard</div>
+</div>
+
+<div class="action-stats">
+  <div class="stat-pill"><div class="stat-dot" style="background:var(--amber)"></div><span id="count-open">5 Open</span></div>
+  <div class="stat-pill"><div class="stat-dot" style="background:var(--green)"></div><span id="count-closed">0 Closed</span></div>
+  <div class="stat-pill"><div class="stat-dot" style="background:var(--red)"></div><span id="count-escalated">0 Escalated</span></div>
+</div>
+
+<div class="actions-grid" id="actions-grid"></div>
+
+<div class="build-btn-wrap">
+  <button class="build-btn" id="build-btn" onclick="goToDashboard()">Build My Dashboard &#8594;</button>
+</div>
+
+<script>
+const T = {
+  en: {
+    appName:'ZFP CEO ADVISOR', morning:'GOOD MORNING, MR. CEO',
+    title:'Action Register', sub:'Review open actions before proceeding to your dashboard',
+    buildBtn:'Build My Dashboard →',
+    open:'Open', closed:'Closed', escalated:'Escalated',
+    priorityHigh:'HIGH', priorityMedium:'MEDIUM', priorityLow:'LOW',
+    openCount:n=>`${n} Open`, closedCount:n=>`${n} Closed`, escalatedCount:n=>`${n} Escalated`,
+  },
+  ar: {
+    appName:'مستشار الرئيس التنفيذي ZFP',
+    morning:'صباح الخير يا سيادة الرئيس',
+    title:'سجل الإجراءات',
+    sub:'راجع الإجراءات المفتوحة قبل المتابعة إلى لوحة التحكم',
+    buildBtn:'اعرض لوحتي التنفيذية ←',
+    open:'مفتوح', closed:'مغلق', escalated:'مُصعَّد',
+    priorityHigh:'عالي', priorityMedium:'متوسط', priorityLow:'منخفض',
+    openCount:n=>`${n} مفتوح`, closedCount:n=>`${n} مغلق`, escalatedCount:n=>`${n} مُصعَّد`,
+  }
+};
+
+let lang  = sessionStorage.getItem('zfp_lang')      || 'en';
+let theme = localStorage.getItem('zfp_exec_theme')  || 'zfp-dark';
+const ACTIONS_KEY = 'zfp_exec_actions_v1';
+
+const DEMO_ACTIONS = [
+  {id:'ACT-001',description:'Develop billable utilization improvement plan — Design BU at 47%, 18 points below target',owner:'COO',due_date:'2026-06-22',priority:'High',status:'Open',source:'Dashboard Alert'},
+  {id:'ACT-002',description:'CFO to present Finance data validation timeline to CEO',owner:'CFO',due_date:'2026-06-22',priority:'High',status:'Open',source:'Finance Dashboard'},
+  {id:'ACT-003',description:'Review top AR at risk projects with collections team — SAR 20.5M overdue 60+ days',owner:'CFO',due_date:'2026-06-25',priority:'High',status:'Open',source:'Finance Dashboard'},
+  {id:'ACT-004',description:'Saudization improvement plan for Design BU — currently 10% vs 20% Nitaqat target',owner:'HR Director',due_date:'2026-06-30',priority:'Medium',status:'Open',source:'Workforce Dashboard'},
+  {id:'ACT-005',description:'Investigate 4-week utilization decline trend — from 78% to 54.5%',owner:'COO',due_date:'2026-06-25',priority:'High',status:'Open',source:'Trend Alert'}
+];
+
+let actions = [];
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadActionStates();
+  applyTheme(theme);
+  applyLang(lang);
+});
+
+function setTheme(t) { theme=t; localStorage.setItem('zfp_exec_theme',t); applyTheme(t); }
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t;
+  document.querySelectorAll('[data-theme-btn]').forEach(b => b.classList.toggle('active', b.dataset.themeBtn===t));
+}
+
+function setLang(l) { lang=l; sessionStorage.setItem('zfp_lang',l); applyLang(l); }
+function applyLang(l) {
+  document.documentElement.lang = l;
+  document.documentElement.dir = l==='ar' ? 'rtl' : 'ltr';
+  const t = T[l];
+  setText('app-name',   t.appName);
+  setText('s1-greeting',t.morning);
+  setText('s1-title',   t.title);
+  setText('s1-sub',     t.sub);
+  setText('build-btn',  t.buildBtn);
+  document.getElementById('btn-en').classList.toggle('active', l==='en');
+  document.getElementById('btn-ar').classList.toggle('active', l==='ar');
+  renderActions();
+}
+function setText(id,txt){ const el=document.getElementById(id); if(el&&txt!==undefined) el.textContent=txt; }
+
+function loadActionStates() {
+  const saved = localStorage.getItem(ACTIONS_KEY);
+  if (saved) {
+    try { const s=JSON.parse(saved); actions=DEMO_ACTIONS.map(a=>({...a,status:s[a.id]||a.status})); }
+    catch(e) { actions=[...DEMO_ACTIONS]; }
+  } else { actions=[...DEMO_ACTIONS]; }
+}
+function saveActionStates() {
+  const s={}; actions.forEach(a=>{s[a.id]=a.status;}); localStorage.setItem(ACTIONS_KEY,JSON.stringify(s));
+}
+
+function renderActions() {
+  const grid = document.getElementById('actions-grid');
+  if (!grid) return;
+  const t = T[lang];
+  grid.innerHTML = actions.map(a=>`
+    <div class="action-card status-${a.status}">
+      <div class="ac-top">
+        <span class="ac-id">${a.id}</span>
+        <span class="priority-badge priority-${a.priority}">${t['priority'+a.priority]||a.priority}</span>
+      </div>
+      <div class="ac-desc">${a.description}</div>
+      <div class="ac-meta">
+        <span>&#128100; ${a.owner}</span>
+        <span>&#128197; ${a.due_date}</span>
+        <span>&#128204; ${a.source}</span>
+      </div>
+      <div class="ac-btns">
+        <button class="ac-btn ${a.status==='Open'?'active-Open':''}"      onclick="setStatus('${a.id}','Open')">${t.open}</button>
+        <button class="ac-btn ${a.status==='Closed'?'active-Closed':''}"  onclick="setStatus('${a.id}','Closed')">${t.closed}</button>
+        <button class="ac-btn ${a.status==='Escalated'?'active-Escalated':''}" onclick="setStatus('${a.id}','Escalated')">${t.escalated}</button>
+      </div>
+    </div>
+  `).join('');
+  const t2=T[lang];
+  setText('count-open',      t2.openCount(actions.filter(a=>a.status==='Open').length));
+  setText('count-closed',    t2.closedCount(actions.filter(a=>a.status==='Closed').length));
+  setText('count-escalated', t2.escalatedCount(actions.filter(a=>a.status==='Escalated').length));
+}
+
+function setStatus(id,status) {
+  const a=actions.find(a=>a.id===id); if(!a) return;
+  a.status=status; saveActionStates(); renderActions();
+  fetch(`/exec/actions/${id}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})}).catch(()=>{});
+}
+
+function goToDashboard() { window.location.href='/exec/'; }
+</script>
+</body>
+</html>

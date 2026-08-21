@@ -27,6 +27,7 @@ from fastapi.staticfiles import StaticFiles
 
 from backend.logging_config import get_logger
 from backend.models import AskRequest, AskResponse, HealthResponse
+from backend.exec_routes import exec_router
 
 logger = get_logger("advisor.main")
 
@@ -73,6 +74,7 @@ app = FastAPI(
 _static_dir = Path(__file__).parent.parent / "static"
 if _static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
+app.include_router(exec_router)
 
 _error_log = Path("logs") / "errors.log"
 
