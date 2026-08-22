@@ -12,8 +12,8 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from advisor.models import AskRequest, AskResponse, HealthResponse
-from advisor.claude_advisor import generate_dax, narrate_result
-from advisor.powerbi import execute_dax
+from advisor.claude_advisor import generate_sql, narrate_result
+from advisor.sql_query import execute_sql, check_connection
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ def _log_error(context: str, error: str) -> None:
         f.write(json.dumps(entry) + "\n")
 
 
-app = FastAPI(title="ZFP Advisor", version="1.0.0")
+app = FastAPI(title="ZFP Advisor", version="1.1.0")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
@@ -39,15 +39,14 @@ async def root():
 
 @app.get("/health", response_model=HealthResponse)
 async def health():
-    powerbi_status = "error"
+    db_status = "error"
     claude_status = "connected"
 
     try:
-        from advisor.auth import get_access_token
-        get_access_token()
-        powerbi_status = "connected"
+        check_connection()
+        db_status = "connected"
     except Exception as e:
-        _log_error("health/powerbi", str(e))
+        _log_error("health/database", str(e))
 
     try:
         key = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -56,14 +55,14 @@ async def health():
     except Exception:
         claude_status = "error"
 
-    return HealthResponse(status="ok", powerbi=powerbi_status, claude=claude_status)
+    return HealthResponse(status="ok", database=db_status, claude=claude_status)
 
 
 @app.get("/debug")
 async def debug():
     """
     Run a full component health check and return a verbose JSON report.
-    Tests Claude API, Power BI authentication, and a live DAX query independently.
+    Tests Claude API and Postgres connectivity (with a live query) independently.
     Every error is returned in full — nothing is swallowed.
     """
     import traceback
@@ -76,16 +75,15 @@ async def debug():
             "error": None,
             "traceback": None,
         },
-        "powerbi_auth": {
+        "database": {
             "status": "untested",
-            "account": os.environ.get("POWERBI_EMAIL", "(POWERBI_EMAIL not set)"),
+            "dsn_host": None,
             "error": None,
             "traceback": None,
         },
-        "powerbi_query": {
+        "database_query": {
             "status": "untested",
-            "dax": "EVALUATE ROW(\"Test\", \"ok\", \"RowCount\", COUNTROWS(TS_DTL))",
-            "http_status": None,
+            "sql": "SELECT 'ok' AS test, COUNT(*) AS row_count FROM ts_dtl",
             "rows_returned": None,
             "raw_response_preview": None,
             "error": None,
@@ -100,7 +98,7 @@ async def debug():
         if not key or key == "your_anthropic_api_key_here":
             raise ValueError(
                 "ANTHROPIC_API_KEY is missing or still set to the placeholder value. "
-                "Update it in your .env file."
+                "Update it in your Render environment variables."
             )
         client = anthropic.Anthropic(api_key=key)
         msg = client.messages.create(
@@ -116,95 +114,55 @@ async def debug():
         report["claude"]["error"] = str(exc)
         report["claude"]["traceback"] = traceback.format_exc()
 
-    # ── 2. Power BI authentication ───────────────────────────────────────────
-    token: str | None = None
-    try:
-        from advisor.auth import get_access_token
-        token = get_access_token()
-        report["powerbi_auth"]["status"] = "ok"
-    except Exception as exc:
-        report["powerbi_auth"]["status"] = "error"
-        report["powerbi_auth"]["error"] = str(exc)
-        report["powerbi_auth"]["traceback"] = traceback.format_exc()
+    # ── 2. Database connectivity ─────────────────────────────────────────────
+    dsn = os.environ.get("DATABASE_URL", "")
+    if dsn:
+        try:
+            # Cheap, safe-to-log host extraction without exposing credentials.
+            report["database"]["dsn_host"] = dsn.split("@")[-1].split("/")[0]
+        except Exception:
+            pass
 
-    # ── 3. Power BI DAX query ────────────────────────────────────────────────
-    if token is None:
-        report["powerbi_query"]["status"] = "skipped"
-        report["powerbi_query"]["error"] = (
-            "Skipped because Power BI authentication failed — fix auth first."
+    db_ok = False
+    try:
+        check_connection()
+        report["database"]["status"] = "ok"
+        db_ok = True
+    except Exception as exc:
+        report["database"]["status"] = "error"
+        report["database"]["error"] = str(exc)
+        report["database"]["traceback"] = traceback.format_exc()
+
+    # ── 3. Live query ────────────────────────────────────────────────────────
+    if not db_ok:
+        report["database_query"]["status"] = "skipped"
+        report["database_query"]["error"] = (
+            "Skipped because the database connection failed — fix that first."
         )
     else:
-        import httpx
-        workspace_id = os.environ.get("POWERBI_WORKSPACE_ID", "")
-        dataset_id = os.environ.get("POWERBI_DATASET_ID", "")
-        dax = report["powerbi_query"]["dax"]
-
-        if not workspace_id or not dataset_id:
-            report["powerbi_query"]["status"] = "error"
-            report["powerbi_query"]["error"] = (
-                "POWERBI_WORKSPACE_ID or POWERBI_DATASET_ID not set in .env"
-            )
-        else:
-            url = (
-                f"https://api.powerbi.com/v1.0/myorg/groups/{workspace_id}"
-                f"/datasets/{dataset_id}/executeQueries"
-            )
-            headers = {
-                "Authorization": f"Bearer {token}",
-                "Content-Type": "application/json",
-            }
-            body = {
-                "queries": [{"query": dax}],
-                "serializerSettings": {"includeNulls": True},
-            }
-            try:
-                with httpx.Client(timeout=30) as http:
-                    resp = http.post(url, headers=headers, json=body)
-
-                report["powerbi_query"]["http_status"] = resp.status_code
-
-                if resp.status_code == 200:
-                    data = resp.json()
-                    try:
-                        rows = data["results"][0]["tables"][0]["rows"]
-                        report["powerbi_query"]["status"] = "ok"
-                        report["powerbi_query"]["rows_returned"] = len(rows)
-                        report["powerbi_query"]["raw_response_preview"] = rows[:5]
-                    except (KeyError, IndexError) as exc:
-                        report["powerbi_query"]["status"] = "error"
-                        report["powerbi_query"]["error"] = (
-                            f"Unexpected response shape — could not extract rows: {exc}"
-                        )
-                        report["powerbi_query"]["raw_response_preview"] = data
-                else:
-                    report["powerbi_query"]["status"] = "error"
-                    # Return the full body so the Power BI error message is visible
-                    try:
-                        body_parsed = resp.json()
-                    except Exception:
-                        body_parsed = resp.text
-                    report["powerbi_query"]["error"] = (
-                        f"HTTP {resp.status_code}: {body_parsed}"
-                    )
-                    report["powerbi_query"]["raw_response_preview"] = body_parsed
-
-            except httpx.TimeoutException:
-                report["powerbi_query"]["status"] = "error"
-                report["powerbi_query"]["error"] = (
-                    "Request timed out after 30 seconds. "
-                    "Check that the workspace/dataset IDs are correct and the dataset is online."
-                )
-                report["powerbi_query"]["traceback"] = traceback.format_exc()
-            except Exception as exc:
-                report["powerbi_query"]["status"] = "error"
-                report["powerbi_query"]["error"] = str(exc)
-                report["powerbi_query"]["traceback"] = traceback.format_exc()
+        try:
+            raw = execute_sql(report["database_query"]["sql"])
+            if raw.startswith("Database error") or raw.startswith("Query rejected") or raw.startswith("Query timed out"):
+                report["database_query"]["status"] = "error"
+                report["database_query"]["error"] = raw
+            else:
+                report["database_query"]["status"] = "ok"
+                try:
+                    rows = json.loads(raw)
+                    report["database_query"]["rows_returned"] = len(rows)
+                    report["database_query"]["raw_response_preview"] = rows[:5]
+                except (json.JSONDecodeError, TypeError):
+                    report["database_query"]["raw_response_preview"] = raw
+        except Exception as exc:
+            report["database_query"]["status"] = "error"
+            report["database_query"]["error"] = str(exc)
+            report["database_query"]["traceback"] = traceback.format_exc()
 
     # ── Summary ──────────────────────────────────────────────────────────────
     statuses = [
         report["claude"]["status"],
-        report["powerbi_auth"]["status"],
-        report["powerbi_query"]["status"],
+        report["database"]["status"],
+        report["database_query"]["status"],
     ]
     if all(s == "ok" for s in statuses):
         report["overall"] = "all systems operational"
@@ -214,10 +172,10 @@ async def debug():
         failing = []
         if report["claude"]["status"] != "ok":
             failing.append("claude")
-        if report["powerbi_auth"]["status"] != "ok":
-            failing.append("powerbi_auth")
-        if report["powerbi_query"]["status"] not in ("ok", "skipped"):
-            failing.append("powerbi_query")
+        if report["database"]["status"] != "ok":
+            failing.append("database")
+        if report["database_query"]["status"] not in ("ok", "skipped"):
+            failing.append("database_query")
         report["overall"] = f"partial failure — check: {', '.join(failing)}"
 
     return JSONResponse(content=report)
@@ -225,53 +183,53 @@ async def debug():
 
 @app.post("/ask", response_model=AskResponse)
 async def ask(req: AskRequest):
-    dax_query = ""
+    sql_query = ""
     raw_data = ""
 
     try:
-        dax_query = generate_dax(req.question)
+        sql_query = generate_sql(req.question)
     except Exception as e:
-        _log_error("ask/generate_dax", str(e))
+        _log_error("ask/generate_sql", str(e))
         return AskResponse(
             answer="AI service temporarily unavailable",
-            dax_query="",
+            sql_query="",
             raw_data="",
             status="error",
         )
 
     try:
-        raw_data = execute_dax(dax_query)
+        raw_data = execute_sql(sql_query)
     except Exception as e:
-        _log_error("ask/execute_dax", str(e))
+        _log_error("ask/execute_sql", str(e))
         return AskResponse(
-            answer=f"Query failed — here is what was attempted:\n\n{dax_query}",
-            dax_query=dax_query,
+            answer=f"Query failed — here is what was attempted:\n\n{sql_query}",
+            sql_query=sql_query,
             raw_data="",
             status="error",
         )
 
-    if raw_data.startswith("Power BI API error") or raw_data.startswith("Unable to connect"):
+    if raw_data.startswith("Database error") or raw_data.startswith("Query rejected") or raw_data.startswith("Query timed out"):
         return AskResponse(
-            answer=f"Query failed — here is what was attempted:\n\n{dax_query}\n\nError: {raw_data}",
-            dax_query=dax_query,
+            answer=f"Query failed — here is what was attempted:\n\n{sql_query}\n\nError: {raw_data}",
+            sql_query=sql_query,
             raw_data=raw_data,
             status="error",
         )
 
     try:
-        answer = narrate_result(req.question, dax_query, raw_data, req.language)
+        answer = narrate_result(req.question, sql_query, raw_data, req.language)
     except Exception as e:
         _log_error("ask/narrate", str(e))
         return AskResponse(
             answer="AI service temporarily unavailable",
-            dax_query=dax_query,
+            sql_query=sql_query,
             raw_data=raw_data,
             status="error",
         )
 
     return AskResponse(
         answer=answer,
-        dax_query=dax_query,
+        sql_query=sql_query,
         raw_data=raw_data,
         status="success",
     )

@@ -5,11 +5,12 @@ fastapi>=0.111.0
 uvicorn[standard]>=0.29.0
 python-dotenv>=1.0.1
 anthropic>=0.28.0
-msal>=1.28.0
 httpx>=0.27.0
 pydantic>=2.7.1
+psycopg2-binary>=2.9.9
 
-# Teams Bot Framework
+# Teams Bot Framework (unrelated to the database — keep only if the Teams
+# bot is still in use; safe to delete this block if it isn't)
 botbuilder-core>=4.15.0
 botbuilder-integration-aiohttp>=4.15.0
 aiohttp>=3.9.0
@@ -21,3 +22,6 @@ Pillow>=10.0.0
 pytest>=8.2.0
 pytest-asyncio>=0.23.6
 respx>=0.21.1
+
+# Removed: msal (was Power BI-only auth — no longer needed now that the
+# database is Postgres/Neon instead of Power BI)
