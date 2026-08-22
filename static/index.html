@@ -417,7 +417,7 @@
   <div id="welcome">
     <img src="/static/logo.png" alt="ZFP" class="welcome-logo" />
     <h2 id="welcome-title">Good day 👋</h2>
-    <p id="welcome-sub">Ask me anything about ZFP's workforce data. I'll query Power BI and give you a clear answer.</p>
+    <p id="welcome-sub">Ask me anything about ZFP's workforce data. I'll query the database and give you a clear answer.</p>
     <div class="suggestions" id="suggestions"></div>
   </div>
 </div>
@@ -456,17 +456,17 @@ const SUGGESTIONS = {
 const TEXT = {
   en: {
     welcomeTitle: "Good day 👋",
-    welcomeSub:   "Ask me anything about ZFP's workforce data. I'll query Power BI and give you a clear answer.",
+    welcomeSub:   "Ask me anything about ZFP's workforce data. I'll query the database and give you a clear answer.",
     placeholder:  "Ask about workforce data…",
-    viewQuery:    "View DAX Query",
+    viewQuery:    "View SQL Query",
     hideQuery:    "Hide Query",
     logoSub:      "Workforce Intelligence",
   },
   ar: {
     welcomeTitle: "أهلاً بك 👋",
-    welcomeSub:   "اسألني عن أي بيانات قوى عاملة في ZFP. سأستعلم من Power BI وأعطيك إجابة واضحة.",
+    welcomeSub:   "اسألني عن أي بيانات قوى عاملة في ZFP. سأستعلم من قاعدة البيانات وأعطيك إجابة واضحة.",
     placeholder:  "اسأل عن بيانات القوى العاملة…",
-    viewQuery:    "عرض استعلام DAX",
+    viewQuery:    "عرض استعلام SQL",
     hideQuery:    "إخفاء الاستعلام",
     logoSub:      "الذكاء الوظيفي",
   }
@@ -531,7 +531,7 @@ function hideWelcome() {
 }
 
 /* ── Message rendering ───────────────────────────────────────────────── */
-function appendMessage(role, text, daxQuery) {
+function appendMessage(role, text, sqlQuery) {
   const area    = document.getElementById('chat-area');
   const wrapper = document.createElement('div');
   wrapper.className = `message ${role}`;
@@ -557,8 +557,8 @@ function appendMessage(role, text, daxQuery) {
   bubble.textContent = text;
   col.appendChild(bubble);
 
-  // Collapsible DAX
-  if (daxQuery && role === 'ai') {
+  // Collapsible SQL
+  if (sqlQuery && role === 'ai') {
     const t   = TEXT[currentLang];
     const btn = document.createElement('button');
     btn.className = 'query-toggle';
@@ -566,7 +566,7 @@ function appendMessage(role, text, daxQuery) {
 
     const box = document.createElement('pre');
     box.className = 'query-box';
-    box.textContent = daxQuery;
+    box.textContent = sqlQuery;
 
     btn.onclick = () => {
       const open = box.classList.toggle('open');
@@ -639,7 +639,7 @@ async function sendQuestion() {
     });
     const data = await resp.json();
     removeLoading();
-    appendMessage('ai', data.answer, data.dax_query || null);
+    appendMessage('ai', data.answer, data.sql_query || null);
   } catch {
     removeLoading();
     appendMessage('ai',
