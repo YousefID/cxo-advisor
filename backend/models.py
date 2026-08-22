@@ -14,12 +14,12 @@ class AskRequest(BaseModel):
 
 class AskResponse(BaseModel):
     answer: str
-    dax_query: str
+    sql_query: str
     status: Literal["success", "error"]
 
 
 class HealthResponse(BaseModel):
     status: str
-    powerbi: str
+    database: str
     claude: str
-    version: str = "1.0.0"
+    version: str = "1.1.0"

@@ -2,7 +2,7 @@
 
 Endpoints:
   GET  /              → serves static/index.html
-  GET  /health        → basic health check (Claude + Power BI)
+  GET  /health        → basic health check (Claude + Postgres)
   GET  /debug         → verbose diagnostics JSON
   POST /ask           → AI workforce Q&A
   POST /api/messages  → Microsoft Teams Bot Framework webhook
@@ -12,13 +12,14 @@ from __future__ import annotations
 
 import json
 import os
-import traceback
 from datetime import datetime, UTC
 from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Always resolve .env relative to this file's parent (project root)
+# Always resolve .env relative to this file's parent (project root).
+# On Render there is no .env file — env vars are injected directly into the
+# process — so this simply no-ops there, which is fine.
 load_dotenv(Path(__file__).parent.parent / ".env", override=True)
 
 from fastapi import FastAPI, Request, Response
@@ -66,7 +67,7 @@ _teams_ready = _init_teams()
 # ── FastAPI app ────────────────────────────────────────────────────────────────
 app = FastAPI(
     title="ZFP Advisor",
-    version="1.0.0",
+    version="1.1.0",
     description="AI workforce intelligence for ZFP Group leadership",
 )
 
@@ -93,20 +94,20 @@ async def root():
     html = Path(__file__).parent.parent / "static" / "index.html"
     if html.exists():
         return FileResponse(str(html))
-    return JSONResponse({"message": "ZFP Advisor API", "version": "1.0.0"})
+    return JSONResponse({"message": "ZFP Advisor API", "version": "1.1.0"})
 
 
 @app.get("/health", response_model=HealthResponse)
 async def health():
-    powerbi_status = "error"
+    db_status = "error"
     claude_status = "connected"
 
     try:
-        from backend.auth import get_access_token
-        get_access_token()
-        powerbi_status = "connected"
+        from backend.sql_query import check_connection
+        check_connection()
+        db_status = "connected"
     except Exception as exc:
-        _log_error("health/powerbi", str(exc))
+        _log_error("health/database", str(exc))
 
     try:
         key = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -115,7 +116,7 @@ async def health():
     except Exception:
         claude_status = "error"
 
-    return HealthResponse(status="ok", powerbi=powerbi_status, claude=claude_status)
+    return HealthResponse(status="ok", database=db_status, claude=claude_status)
 
 
 @app.get("/debug")
@@ -123,21 +124,21 @@ async def debug():
     """Verbose component health check — tests each subsystem independently."""
     report: dict = {
         "timestamp": datetime.now(UTC).isoformat(),
-        "version": "1.0.0",
+        "version": "1.1.0",
         "teams_bot": "ready" if _teams_ready else "disabled (MicrosoftAppId/Password not set)",
         "claude": {
             "status": "untested",
-            "model": os.getenv("CLAUDE_MODEL", "claude-sonnet-4-5"),
+            "model": os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
             "response_preview": None,
             "error": None,
         },
-        "powerbi_auth": {
+        "database": {
             "status": "untested",
             "error": None,
         },
-        "powerbi_query": {
+        "database_query": {
             "status": "untested",
-            "dax": "EVALUATE ROW(\"Test\", \"ok\", \"RowCount\", COUNTROWS(TS_DTL))",
+            "sql": "SELECT 'ok' AS test, COUNT(*) AS row_count FROM ts_dtl",
             "rows_returned": None,
             "error": None,
         },
@@ -151,7 +152,7 @@ async def debug():
             raise ValueError("ANTHROPIC_API_KEY is missing or still placeholder")
         client = anthropic.Anthropic(api_key=key)
         msg = client.messages.create(
-            model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-5"),
+            model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
             max_tokens=16,
             messages=[{"role": "user", "content": "Reply with one word: healthy"}],
         )
@@ -161,79 +162,84 @@ async def debug():
         report["claude"]["status"] = "error"
         report["claude"]["error"] = str(exc)
 
-    # Power BI auth
-    token: str | None = None
+    # Database connection
+    db_ok = False
     try:
-        from backend.auth import get_access_token
-        token = get_access_token()
-        report["powerbi_auth"]["status"] = "ok"
+        from backend.sql_query import check_connection
+        check_connection()
+        report["database"]["status"] = "ok"
+        db_ok = True
     except Exception as exc:
-        report["powerbi_auth"]["status"] = "error"
-        report["powerbi_auth"]["error"] = str(exc)
+        report["database"]["status"] = "error"
+        report["database"]["error"] = str(exc)
 
-    # Power BI query
-    if token is None:
-        report["powerbi_query"]["status"] = "skipped"
-        report["powerbi_query"]["error"] = "Skipped — fix auth first"
+    # Live query
+    if not db_ok:
+        report["database_query"]["status"] = "skipped"
+        report["database_query"]["error"] = "Skipped — fix the database connection first"
     else:
         try:
-            from backend.powerbi import execute_dax
-            result = execute_dax(report["powerbi_query"]["dax"])
-            if result.startswith("Power BI API error") or result.startswith("Unable"):
-                report["powerbi_query"]["status"] = "error"
-                report["powerbi_query"]["error"] = result
+            from backend.sql_query import execute_sql
+            result = execute_sql(report["database_query"]["sql"])
+            if result.startswith("Database error") or result.startswith("Query rejected") or result.startswith("Query timed out"):
+                report["database_query"]["status"] = "error"
+                report["database_query"]["error"] = result
             else:
-                report["powerbi_query"]["status"] = "ok"
-                report["powerbi_query"]["rows_returned"] = len(json.loads(result)) if result.startswith("[") else 1
+                report["database_query"]["status"] = "ok"
+                try:
+                    rows = json.loads(result)
+                    report["database_query"]["rows_returned"] = len(rows)
+                except (json.JSONDecodeError, TypeError):
+                    report["database_query"]["rows_returned"] = None
         except Exception as exc:
-            report["powerbi_query"]["status"] = "error"
-            report["powerbi_query"]["error"] = str(exc)
+            report["database_query"]["status"] = "error"
+            report["database_query"]["error"] = str(exc)
 
-    statuses = [report["claude"]["status"], report["powerbi_auth"]["status"]]
+    statuses = [report["claude"]["status"], report["database"]["status"]]
     report["overall"] = (
         "all systems operational" if all(s == "ok" for s in statuses)
-        else f"issues detected — check claude/powerbi_auth fields"
+        else "issues detected — check claude/database fields"
     )
     return JSONResponse(content=report)
 
 
 @app.post("/ask", response_model=AskResponse)
 async def ask(req: AskRequest):
-    from backend.advisor import generate_dax, narrate_result
-    from backend.powerbi import execute_dax
+    from backend.advisor import generate_sql, narrate_result
+    from backend.sql_query import execute_sql
 
-    dax_query = ""
-
-    try:
-        dax_query = generate_dax(req.question)
-    except Exception as exc:
-        _log_error("ask/generate_dax", str(exc))
-        return AskResponse(answer="AI service temporarily unavailable", dax_query="", status="error")
+    sql_query = ""
 
     try:
-        raw_data = execute_dax(dax_query)
+        sql_query = generate_sql(req.question)
     except Exception as exc:
-        _log_error("ask/execute_dax", str(exc))
+        _log_error("ask/generate_sql", str(exc))
+        return AskResponse(answer="AI service temporarily unavailable", sql_query="", status="error")
+
+    try:
+        raw_data = execute_sql(sql_query)
+    except Exception as exc:
+        _log_error("ask/execute_sql", str(exc))
         return AskResponse(
-            answer=f"Query failed. DAX attempted:\n\n{dax_query}",
-            dax_query=dax_query,
+            answer=f"Query failed. SQL attempted:\n\n{sql_query}",
+            sql_query=sql_query,
             status="error",
         )
 
-    if raw_data.startswith("Power BI API error") or raw_data.startswith("Unable"):
+    if raw_data.startswith("Database error") or raw_data.startswith("Query rejected") or raw_data.startswith("Query timed out"):
         return AskResponse(
-            answer=f"Query failed — {raw_data}\n\nDAX:\n{dax_query}",
-            dax_query=dax_query,
+            answer=f"Query failed — {raw_data}\n\nSQL:\n{sql_query}",
+            sql_query=sql_query,
             status="error",
         )
 
     try:
-        answer = narrate_result(req.question, dax_query, raw_data, req.language)
+        answer = narrate_result(req.question, sql_query, raw_data, req.language)
     except Exception as exc:
         _log_error("ask/narrate", str(exc))
-        return AskResponse(answer="AI service temporarily unavailable", dax_query=dax_query, status="error")
+        return AskResponse(answer="AI service temporarily unavailable", sql_query=sql_query, status="error")
 
-    return AskResponse(answer=answer, dax_query=dax_query, status="success")
+    return AskResponse(answer=answer, sql_query=sql_query, status="success")
 
 
 @app.post("/api/messages")
@@ -245,7 +251,6 @@ async def messages(request: Request) -> Response:
             status_code=503,
         )
 
-    from botbuilder.integration.aiohttp import aiohttp_error_middleware
     from botbuilder.schema import Activity as BFActivity
 
     body = await request.json()

@@ -1,10 +1,10 @@
-"""ZFP Advisor AI layer — DAX generation and result narration.
+"""ZFP Advisor AI layer — SQL generation and result narration.
 
 Two public functions:
-  generate_dax(question) → DAX query string
-  narrate_result(question, dax, data, language) → business narrative string
+  generate_sql(question) → PostgreSQL query string
+  narrate_result(question, sql, data, language) → business narrative string
 
-Both use the Anthropic Claude API (claude-sonnet-4-5).
+Both use the Anthropic Claude API (claude-sonnet-4-6).
 Data classification: Internal — aggregate workforce data only, no PII.
 """
 
@@ -18,51 +18,55 @@ from backend.logging_config import get_logger
 
 logger = get_logger("advisor.claude")
 
-_MODEL = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-5")
+_MODEL = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6")
 
-_DAX_SYSTEM = """You are a DAX query generator for Power BI. Generate ONLY valid DAX queries.
-Start every query with EVALUATE. Return ONLY the DAX query, nothing else.
-No explanation, no markdown, no backticks.
+_SQL_SYSTEM = """You are a PostgreSQL query generator. Generate ONLY a single valid,
+read-only PostgreSQL query. Return ONLY the SQL, nothing else — no explanation,
+no markdown, no backticks, no trailing semicolon, and never more than one
+statement. Only SELECT (or WITH ... SELECT) is permitted — never write DDL or
+DML of any kind.
 
-PRIMARY TABLE: TS_DTL (Timesheet Detail)
-Columns: EMP_NO, WEEK_NO (YYYYWW integer, current week = MAX),
-TS_DATE (date), RGLR_HRS (decimal), OT_HRS (decimal),
-PROJECT_NO (text, blank = overhead/non-billable),
-Project_Name (text), BUSNS_UNIT_NO (text),
-NATIONALITY_NO (text, "1" = Saudi), TD_ID,
-DEPT_NO, BRANCH_NO
+PRIMARY VIEW: v_timesheet — one row per timesheet entry, already joined to
+every lookup table. Prefer this over the raw tables unless you specifically
+need something it doesn't expose.
 
-RELATED TABLES (use RELATED() to join):
-- EMPLOYEES: EMP_NO → employee details, DEPT_NO, BRANCH_NO, BUSNS_UNIT_NO
-- BUSNS_UNIT: BUSNS_UNIT_NO → "Clean Name" column for BU display name
-- DEPARTMENT: DEPT_NO → DEPT_DSCR
-- NATIONS: NATIONALITY_NO → COUNTRY_NAME
-- BRANCH: BRANCH_NO → BRANCH_NAME
-- PROJECTS: PROJECT_NO → project details, STATUS, BUSNS_SECTOR
-- STATUS: → STATUS_DSCR
-- BUSNS_SECTOR: → SECTOR_DSCR
+v_timesheet columns:
+td_id, emp_no, emp_name, week_no (YYYYWW integer, current week = MAX(week_no)),
+ts_date (date), rglr_hrs (numeric), ot_hrs (numeric), total_hrs (numeric),
+project_no (text, NULL/blank = overhead), project_name,
+is_billable (boolean), busns_unit_no, busns_unit_name,
+dept_no, dept_dscr, branch_no, branch_name,
+nationality_no, country_name, is_saudi (boolean, true = Saudi national),
+status, status_dscr, busns_sector, sector_dscr
 
-BILLABLE LOGIC: PROJECT_NO is NOT blank = billable hours
-OVERHEAD LOGIC: PROJECT_NO IS blank = non-billable/overhead hours
+UNDERLYING TABLES (join manually only if v_timesheet doesn't cover the need):
+ts_dtl (fact), employees, projects, busns_unit, department, branch,
+nations, status, busns_sector — see SCHEMA.md for the full column list and
+foreign keys if you need to go beyond the view.
 
-WEEK NUMBER FORMAT: YYYYWW (e.g. 202523 = week 23 of 2025)
-Current year is 2026.
+BILLABLE LOGIC: is_billable = true (equivalently: project_no IS NOT NULL AND project_no <> '')
+OVERHEAD LOGIC: is_billable = false
+
+WEEK NUMBER FORMAT: YYYYWW integer (e.g. 202623 = week 23 of 2026). Current year is 2026.
 
 COMMON PATTERNS:
-- Total hours = SUM(TS_DTL[RGLR_HRS]) + SUM(TS_DTL[OT_HRS])
-- Billable hours = CALCULATE(SUM(TS_DTL[RGLR_HRS]), TS_DTL[PROJECT_NO] <> "")
-- Utilization % = DIVIDE(billable hours, total hours, 0)
-- Current month filter = MONTH(TS_DTL[TS_DATE]) = MONTH(TODAY()) && YEAR(TS_DTL[TS_DATE]) = YEAR(TODAY())
-- Saudi employees = CALCULATE(..., TS_DTL[NATIONALITY_NO] = "1")
+- Total hours = SUM(total_hrs)
+- Billable hours = SUM(rglr_hrs) FILTER (WHERE is_billable)
+- Utilization % = billable_hours / NULLIF(total_hours, 0) * 100
+- Current month filter = date_trunc('month', ts_date) = date_trunc('month', CURRENT_DATE)
+- Saudi headcount = COUNT(DISTINCT emp_no) FILTER (WHERE is_saudi)
+- Saudization % = COUNT(DISTINCT emp_no) FILTER (WHERE is_saudi)
+    / NULLIF(COUNT(DISTINCT emp_no), 0) * 100
 
-Always use SUMMARIZECOLUMNS for grouped results.
-Always include a readable label column alongside numeric columns.
-Limit results to TOP 10 unless user asks for all."""
+Always alias aggregate/computed columns with a readable name (e.g. AS utilization_pct).
+Always include a readable label column (name, not just an ID) alongside numeric results.
+Group with GROUP BY as needed; there is no SUMMARIZECOLUMNS equivalent to reach for.
+Limit results to 10 rows with LIMIT 10 unless the user explicitly asks for all rows."""
 
 _NARRATION_SYSTEM = """You are ZFP Advisor, an AI business advisor for senior leadership of ZFP Group,
 an Architecture & Engineering firm operating in Saudi Arabia and Egypt.
 
-Your job: interpret Power BI data and deliver a clear, confident business answer.
+Your job: interpret workforce data and deliver a clear, confident business answer.
 
 Rules:
 - Lead with the key number or finding
@@ -90,33 +94,37 @@ def _get_client() -> anthropic.Anthropic:
     return _client
 
 
-def generate_dax(user_question: str) -> str:
-    """Generate a DAX query for the given natural-language question."""
+def generate_sql(user_question: str) -> str:
+    """Generate a read-only PostgreSQL query for the given natural-language question.
+
+    Replaces generate_dax(). Same signature shape, so callers (main.py,
+    teams_bot.py) only need the import and function name updated.
+    """
     client = _get_client()
     msg = client.messages.create(
         model=_MODEL,
         max_tokens=512,
-        system=_DAX_SYSTEM,
+        system=_SQL_SYSTEM,
         messages=[{"role": "user", "content": user_question}],
     )
-    dax = msg.content[0].text.strip()
-    logger.info("dax_generated", extra={"extra": {"model": _MODEL, "chars": len(dax)}})
-    return dax
+    sql = msg.content[0].text.strip()
+    logger.info("sql_generated", extra={"extra": {"model": _MODEL, "chars": len(sql)}})
+    return sql
 
 
 def narrate_result(
     user_question: str,
-    dax_query: str,
+    sql_query: str,
     raw_data: str,
     language: str,
 ) -> str:
-    """Narrate Power BI query results as a business insight."""
+    """Narrate workforce query results as a business insight."""
     client = _get_client()
     lang_label = "English" if language == "en" else "Arabic"
     system = _NARRATION_SYSTEM.format(language=lang_label)
     prompt = (
         f"User question: {user_question}\n\n"
-        f"DAX query used:\n{dax_query}\n\n"
+        f"SQL query used:\n{sql_query}\n\n"
         f"Data returned:\n{raw_data}"
     )
     msg = client.messages.create(
