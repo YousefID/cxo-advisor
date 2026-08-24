@@ -1,11 +1,12 @@
-"""ZFP Advisor AI layer — SQL generation and result narration.
+"""CXO Advisor AI layer — SQL generation and result narration.
 
 Two public functions:
   generate_sql(question) → PostgreSQL query string
   narrate_result(question, sql, data, language) → business narrative string
 
 Both use the Anthropic Claude API (claude-sonnet-4-6).
-Data classification: Internal — aggregate workforce data only, no PII.
+Data classification: Internal — aggregate workforce and finance data only,
+no individual PII (employee names in the seeded demo data are pseudonyms).
 """
 
 from __future__ import annotations
@@ -44,6 +45,25 @@ ts_dtl (fact), employees, projects, busns_unit, department, branch,
 nations, status, busns_sector — see SCHEMA.md for the full column list and
 foreign keys if you need to go beyond the view.
 
+FINANCE TABLES (separate from workforce data — no FK to projects; join on
+project_no only where it happens to match, since demo project codes only
+partially overlap):
+- project_finance: project_no, project_name, sector, business_unit,
+  contract_value_sar, start_date, end_date, invoiced_to_date_sar,
+  collected_to_date_sar, outstanding_ar_sar, ar_age_days, direct_cost_sar,
+  gross_profit_sar, margin_pct, project_status, notes
+- monthly_revenue: month (text 'YYYY-MM'), revenue_invoiced_sar,
+  direct_costs_sar, gross_profit_sar, margin_pct, cash_collected_sar,
+  new_contracts_sar, headcount_cost_sar
+- budget_vs_actual: project_no, project_name, budgeted_cost_sar,
+  actual_cost_sar, variance_sar, variance_pct, status
+
+Use the finance tables for questions about AR (accounts receivable), revenue,
+margin, budget vs actual, cash collection, or contract value. Use
+v_timesheet/workforce tables for questions about hours, utilization,
+headcount, or Saudization. A question can span both — join on project_no
+where present, but expect it not to match for every row.
+
 BILLABLE LOGIC: is_billable = true (equivalently: project_no IS NOT NULL AND project_no <> '')
 OVERHEAD LOGIC: is_billable = false
 
@@ -63,10 +83,9 @@ Always include a readable label column (name, not just an ID) alongside numeric 
 Group with GROUP BY as needed; there is no SUMMARIZECOLUMNS equivalent to reach for.
 Limit results to 10 rows with LIMIT 10 unless the user explicitly asks for all rows."""
 
-_NARRATION_SYSTEM = """You are ZFP Advisor, an AI business advisor for senior leadership of ZFP Group,
-an Architecture & Engineering firm operating in Saudi Arabia and Egypt.
+_NARRATION_SYSTEM = """You are CXO Advisor, an AI business advisor for senior leadership.
 
-Your job: interpret workforce data and deliver a clear, confident business answer.
+Your job: interpret workforce and finance data and deliver a clear, confident business answer.
 
 Rules:
 - Lead with the key number or finding

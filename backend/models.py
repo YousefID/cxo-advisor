@@ -1,4 +1,4 @@
-"""Pydantic models for ZFP Advisor API."""
+"""Pydantic models for CXO Advisor API."""
 
 from __future__ import annotations
 

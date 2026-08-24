@@ -1,4 +1,4 @@
-"""Microsoft Teams Bot for ZFP Advisor.
+"""Microsoft Teams Bot for CXO Advisor.
 
 Registers an ActivityHandler that:
   1. Receives a user message from Teams
@@ -51,7 +51,7 @@ def _format_teams_response(answer: str, sql_query: str, language: str) -> str:
     )
 
 
-class ZFPAdvisorBot(ActivityHandler):
+class CXOAdvisorBot(ActivityHandler):
     """Teams bot that answers workforce questions using Postgres + Claude."""
 
     async def on_message_activity(self, turn_context: TurnContext) -> None:
@@ -61,7 +61,7 @@ class ZFPAdvisorBot(ActivityHandler):
             await turn_context.send_activity(
                 Activity(
                     type="message",
-                    text="Please ask me a question about ZFP workforce data.",
+                    text="Please ask me a question about your workforce data.",
                 )
             )
             return
@@ -111,10 +111,10 @@ class ZFPAdvisorBot(ActivityHandler):
 
 def _unavailable_msg(language: str) -> str:
     if language == "ar":
-        return "ZFP Advisor غير متاح مؤقتاً. يرجى المحاولة مرة أخرى لاحقاً."
-    return "ZFP Advisor is temporarily unavailable. Please try again in a moment."
+        return "CXO Advisor غير متاح مؤقتاً. يرجى المحاولة مرة أخرى لاحقاً."
+    return "CXO Advisor is temporarily unavailable. Please try again in a moment."
 
 
-def create_bot() -> ZFPAdvisorBot:
+def create_bot() -> CXOAdvisorBot:
     """Factory — called once at app startup."""
-    return ZFPAdvisorBot()
+    return CXOAdvisorBot()

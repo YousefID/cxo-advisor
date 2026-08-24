@@ -1,4 +1,4 @@
-"""Structured JSON logging configuration for ZFP Advisor.
+"""Structured JSON logging configuration for CXO Advisor.
 
 Every log line is a JSON object — Azure Monitor / Log Analytics picks these
 up automatically and makes them queryable.

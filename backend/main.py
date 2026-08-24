@@ -1,4 +1,4 @@
-"""ZFP Advisor — FastAPI application entry point.
+"""CXO Advisor — FastAPI application entry point.
 
 Endpoints:
   GET  /              → serves static/index.html
@@ -66,9 +66,9 @@ _teams_ready = _init_teams()
 
 # ── FastAPI app ────────────────────────────────────────────────────────────────
 app = FastAPI(
-    title="ZFP Advisor",
+    title="CXO Advisor",
     version="1.1.0",
-    description="AI workforce intelligence for ZFP Group leadership",
+    description="AI workforce intelligence for executive leadership",
 )
 
 # Serve static files (logo.png, etc.)
@@ -94,7 +94,7 @@ async def root():
     html = Path(__file__).parent.parent / "static" / "index.html"
     if html.exists():
         return FileResponse(str(html))
-    return JSONResponse({"message": "ZFP Advisor API", "version": "1.1.0"})
+    return JSONResponse({"message": "CXO Advisor API", "version": "1.1.0"})
 
 
 @app.get("/health", response_model=HealthResponse)
