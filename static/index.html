@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ZFP Advisor — Workforce Intelligence</title>
+<title>CXO Advisor — Workforce Intelligence</title>
 <style>
   :root {
     --navy: #1B2A4A;
@@ -401,9 +401,9 @@
 
 <header>
   <div class="logo">
-    <img src="/static/logo.png" alt="ZFP Logo" />
+    <img src="/static/logo.png" alt="CXO Advisor Logo" />
     <div class="logo-text">
-      <div class="logo-name">ZFP <span>Advisor</span></div>
+      <div class="logo-name">CXO <span>Advisor</span></div>
       <div class="logo-subtitle" id="logo-sub">Workforce Intelligence</div>
     </div>
   </div>
@@ -415,9 +415,9 @@
 
 <div id="chat-area">
   <div id="welcome">
-    <img src="/static/logo.png" alt="ZFP" class="welcome-logo" />
+    <img src="/static/logo.png" alt="CXO Advisor" class="welcome-logo" />
     <h2 id="welcome-title">Good day 👋</h2>
-    <p id="welcome-sub">Ask me anything about ZFP's workforce data. I'll query the database and give you a clear answer.</p>
+    <p id="welcome-sub">Ask me anything about your workforce data. I'll query the database and give you a clear answer.</p>
     <div class="suggestions" id="suggestions"></div>
   </div>
 </div>
@@ -456,7 +456,7 @@ const SUGGESTIONS = {
 const TEXT = {
   en: {
     welcomeTitle: "Good day 👋",
-    welcomeSub:   "Ask me anything about ZFP's workforce data. I'll query the database and give you a clear answer.",
+    welcomeSub:   "Ask me anything about your workforce data. I'll query the database and give you a clear answer.",
     placeholder:  "Ask about workforce data…",
     viewQuery:    "View SQL Query",
     hideQuery:    "Hide Query",
@@ -464,7 +464,7 @@ const TEXT = {
   },
   ar: {
     welcomeTitle: "أهلاً بك 👋",
-    welcomeSub:   "اسألني عن أي بيانات قوى عاملة في ZFP. سأستعلم من قاعدة البيانات وأعطيك إجابة واضحة.",
+    welcomeSub:   "اسألني عن أي بيانات قوى عاملة. سأستعلم من قاعدة البيانات وأعطيك إجابة واضحة.",
     placeholder:  "اسأل عن بيانات القوى العاملة…",
     viewQuery:    "عرض استعلام SQL",
     hideQuery:    "إخفاء الاستعلام",
@@ -542,7 +542,7 @@ function appendMessage(role, text, sqlQuery) {
   if (role === 'ai') {
     const img = document.createElement('img');
     img.src = '/static/logo.png';
-    img.alt = 'ZFP';
+    img.alt = 'CXO Advisor';
     av.appendChild(img);
   } else {
     av.textContent = currentLang === 'ar' ? 'أنت' : 'You';
@@ -597,7 +597,7 @@ function showLoading() {
   const av = document.createElement('div');
   av.className = 'avatar ai';
   const img = document.createElement('img');
-  img.src = '/static/logo.png'; img.alt = 'ZFP';
+  img.src = '/static/logo.png'; img.alt = 'CXO Advisor';
   av.appendChild(img);
 
   const lb = document.createElement('div');
