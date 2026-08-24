@@ -67,13 +67,25 @@ where present, but expect it not to match for every row.
 BILLABLE LOGIC: is_billable = true (equivalently: project_no IS NOT NULL AND project_no <> '')
 OVERHEAD LOGIC: is_billable = false
 
-WEEK NUMBER FORMAT: YYYYWW integer (e.g. 202623 = week 23 of 2026). Current year is 2026.
+WEEK NUMBER FORMAT: YYYYWW integer (e.g. 202623 = week 23 of 2026).
+
+IMPORTANT — this is a fixed historical dataset, not a live feed. It does not
+extend to today's real-world date. Never use CURRENT_DATE or TODAY() to mean
+"the current/latest period" — the data ends before today and that filter
+will silently return zero rows. Instead, treat "current," "this month," "this
+week," "latest," or "recent" as the most recent period actually present in
+the data:
+- Current week = MAX(week_no) in v_timesheet (or ts_dtl)
+- Current month = the month of MAX(ts_date) in v_timesheet — e.g.
+  date_trunc('month', ts_date) = (SELECT date_trunc('month', MAX(ts_date)) FROM v_timesheet)
+- "Last month" = one calendar month before that latest month, computed the
+  same relative way — never relative to CURRENT_DATE.
 
 COMMON PATTERNS:
 - Total hours = SUM(total_hrs)
 - Billable hours = SUM(rglr_hrs) FILTER (WHERE is_billable)
 - Utilization % = billable_hours / NULLIF(total_hours, 0) * 100
-- Current month filter = date_trunc('month', ts_date) = date_trunc('month', CURRENT_DATE)
+- Current month filter = date_trunc('month', ts_date) = (SELECT date_trunc('month', MAX(ts_date)) FROM v_timesheet)
 - Saudi headcount = COUNT(DISTINCT emp_no) FILTER (WHERE is_saudi)
 - Saudization % = COUNT(DISTINCT emp_no) FILTER (WHERE is_saudi)
     / NULLIF(COUNT(DISTINCT emp_no), 0) * 100
